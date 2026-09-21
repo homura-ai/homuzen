@@ -1,0 +1,111 @@
+/* Modify URL Bar Icons — Sine mod for Zen Browser.
+ *
+ * Styles the toolbar slots that URL bar icons are dragged into. The icons
+ * themselves are the browser's own elements, so their looks, states and
+ * popups are untouched; this sheet only sizes them like toolbar buttons and
+ * lifts the URL-bar-only rules that would otherwise hide them.
+ * !important is required because Sine loads this as a user sheet, which
+ * otherwise loses to the browser's own chrome styles.
+ */
+
+/* ---- Slots -------------------------------------------------------------- */
+
+.mubi-slot {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  /* Firefox only defines the page-action hover colours inside the URL bar;
+     borrow the toolbar button ones out here. */
+  --urlbar-box-background-color-hover: var(--toolbarbutton-hover-background);
+  --urlbar-box-background-color-active: var(--toolbarbutton-active-background);
+  --urlbar-box-text-color-hover: inherit;
+  --urlbar-icon-border-radius: var(--toolbarbutton-border-radius, 6px);
+}
+
+/* An icon Firefox has hidden (reader view on a plain page, zoom at 100%, …)
+   collapses its slot too, so it leaves no gap in the toolbar. */
+:root:not([customizing]) .mubi-slot:not(:has(> [mubi-relocated]:not([hidden]))) {
+  display: none !important;
+}
+
+.mubi-placeholder {
+  display: none !important;
+}
+
+/* ---- Relocated icons ---------------------------------------------------- */
+
+.mubi-slot > [mubi-relocated] {
+  margin: 0 !important;
+  border-radius: var(--toolbarbutton-border-radius, 6px) !important;
+  min-width: 0 !important;
+}
+
+.mubi-slot > .urlbar-page-action[mubi-relocated],
+.mubi-slot > #tracking-protection-icon-container[mubi-relocated],
+.mubi-slot > #zen-site-data-icon-button[mubi-relocated] {
+  width: auto !important;
+  height: auto !important;
+  padding: 6px !important;
+}
+
+.mubi-slot > #identity-box[mubi-relocated] {
+  height: auto !important;
+}
+
+/* ---- Rules Zen applies inside the URL bar ------------------------------- */
+
+/* Zen hides the bookmark star, reader view and some optional icons in the
+   URL bar (they live in its unified site-data button). Once an icon has been
+   moved out it is shown again, unless the user asks to keep Zen's choice. */
+@media not -moz-pref("mod.modify-url-bar-icons.keep-zen-hidden") {
+  /* :where() keeps this below the customize-mode and editing rules. */
+  .mubi-slot > :where(
+    #star-button-box,
+    #reader-mode-button,
+    #picture-in-picture-button,
+    #userContext-icons,
+    #tracking-protection-icon-container,
+    #zen-copy-url-button:not([disabled])
+  )[mubi-relocated]:not([hidden]) {
+    display: flex !important;
+  }
+
+  /* Firefox shows granted-permission icons next to the lock; Zen folds them
+     into its site-data button. Bring them back with the identity block. */
+  .mubi-slot > #identity-box[mubi-relocated] #identity-permission-box:is([open="true"], [hasPermissions], [hasSharingIcon]) {
+    display: flex !important;
+  }
+}
+
+/* Firefox hides page actions while the URL bar shows typed text instead of
+   the page address. Relocated ones stay visible unless asked otherwise. */
+@media -moz-pref("mod.modify-url-bar-icons.hide-while-editing") {
+  #navigator-toolbox[mubi-editing] .mubi-slot > .urlbar-page-action[mubi-relocated],
+  #navigator-toolbox[mubi-editing] .mubi-slot > #urlbar-zoom-button[mubi-relocated] {
+    display: none !important;
+  }
+}
+
+/* ---- Customize mode ----------------------------------------------------- */
+
+/* While customizing, every slot shows a stand-in icon so it can be found and
+   dragged even when the real icon is hidden for the current page. */
+.mubi-slot > .mubi-ghost {
+  display: none;
+  width: 16px;
+  height: 16px;
+  padding: 6px;
+  -moz-context-properties: fill, fill-opacity;
+  fill: currentColor;
+  fill-opacity: 0.8;
+}
+
+:root[customizing] .mubi-slot > .mubi-ghost {
+  display: flex !important;
+}
+
+:root[customizing] .mubi-slot > [mubi-relocated] {
+  display: none !important;
+}
