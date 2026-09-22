@@ -10,12 +10,12 @@ A Sine JavaScript mod for Zen Browser that makes the Essentials cap configurable
 
 ## Install with Sine
 
-1. Put this project's files in a GitHub repository.
-2. In Zen's **Settings → Sine Mods**, enter that repository's URL in the custom GitHub repository installer.
+1. Open Zen's **Settings → Sine Mods**.
+2. Enter `https://github.com/01-1/more-essentials` in the custom GitHub repository installer.
 3. Allow JavaScript from unofficial sources in Sine if required (`sine.allow-unsafe-js`).
 4. Open **More Essentials** settings and choose **Infinite** or **Custom**. For Custom, enter a cap and leave the field to save it.
 
-This folder is the complete mod source; it has no build step or dependencies. Publishing the repository and installing it in a browser are separate steps.
+This repository is the complete mod source; it has no build step or dependencies.
 
 ## Implementation and compatibility
 

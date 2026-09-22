@@ -116,6 +116,14 @@ test('window unload restores the cap; cleanup preserves a later override', () =>
 
 test('package references existing files and settings match runtime defaults', () => {
   const theme = JSON.parse(fs.readFileSync(path.join(root, 'theme.json')));
+  for (const field of ['id', 'name', 'description', 'homepage', 'version', 'createdAt', 'updatedAt', 'style', 'fork']) {
+    assert.ok(Object.hasOwn(theme, field), `Missing metadata: ${field}`);
+  }
+  assert.equal(theme.homepage, 'https://github.com/01-1/more-essentials');
+  assert.ok(fs.existsSync(path.join(root, theme.style)));
+  assert.ok(theme.fork.includes('zen'));
+  assert.ok(Number.isFinite(Date.parse(theme.createdAt)));
+  assert.ok(Date.parse(theme.updatedAt) > Date.parse('2026-09-21'));
   const prefs = JSON.parse(fs.readFileSync(path.join(root, theme.preferences)));
   for (const script of Object.keys(theme.scripts)) assert.ok(fs.existsSync(path.join(root, script)));
   assert.equal(theme.supportsUnload, true);
