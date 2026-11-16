@@ -1,0 +1,31 @@
+{
+  "id": "homuzen",
+  "name": "Homuzen",
+  "description": "Homura's Zen tweaks in one mod, each off until you turn it on: Tab State Highlighter, middle-click unload for regular tabs, More Essentials, Modify URL Bar Icons and Sine Mod Search.",
+  "homepage": "https://github.com/homura-ai/homuzen",
+  "readme": "https://raw.githubusercontent.com/homura-ai/homuzen/main/README.md",
+  "image": "https://raw.githubusercontent.com/homura-ai/homuzen/main/sine-mod-search/screenshot.png",
+  "author": "homura-ai",
+  "version": "1.0.0",
+  "createdAt": "2026-11-16",
+  "updatedAt": "2026-11-16T21:25:00Z",
+  "style": "chrome.css",
+  "preferences": "preferences.json",
+  "scripts": {
+    "middle-click-unload/middle-click-unload.uc.js": {
+      "include": ["chrome://browser/content/browser.xhtml"]
+    },
+    "more-essentials/more-essentials.uc.js": {
+      "include": ["chrome://browser/content/browser.xhtml"]
+    },
+    "modify-url-bar-icons/modify-url-bar-icons.uc.js": {
+      "include": ["chrome://browser/content/browser.xhtml"]
+    },
+    "sine-mod-search/sine-mod-search.uc.js": {
+      "include": ["about:preferences*", "about:settings*"]
+    }
+  },
+  "supportsUnload": true,
+  "tags": ["chrome", "tabs", "tab-state", "essentials", "urlbar", "toolbar", "sine"],
+  "fork": ["zen"]
+}

@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
-const source = fs.readFileSync(path.join(root, 'modify-url-bar-icons.uc.js'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'modify-url-bar-icons', 'modify-url-bar-icons.uc.js'), 'utf8');
 
 // ---- Minimal DOM: just enough of Element for the script and the tests. ----
 
@@ -156,6 +156,8 @@ class FakeCustomizableUI {
 // ---- One browser window with a Zen-shaped URL bar. ----
 
 function browser(cui, { os = 'Linux', prefs = {}, extension = false } = {}) {
+  prefs = { 'mod.homuzen.modify-url-bar-icons.enabled': true, ...prefs };
+  const prefObservers = new Set();
   const document = new Document();
   const el = (tag, id, className, parent, attrs = {}) => {
     const node = document.createXULElement(tag);
@@ -218,7 +220,11 @@ function browser(cui, { os = 'Linux', prefs = {}, extension = false } = {}) {
     document, console, MutationObserver, Promise,
     Services: {
       appinfo: { OS: os },
-      prefs: { getBoolPref: (name, fallback) => prefs[name] ?? fallback },
+      prefs: {
+        getBoolPref: (name, fallback) => prefs[name] ?? fallback,
+        addObserver: (name, observer) => prefObservers.add(observer),
+        removeObserver: (name, observer) => prefObservers.delete(observer),
+      },
       wm: { getEnumerator: () => cui.windows },
     },
   });
@@ -235,6 +241,11 @@ function browser(cui, { os = 'Linux', prefs = {}, extension = false } = {}) {
     slot: (id) => document.getElementById(`mubi-${id}`),
     byId: (id) => document.getElementById(id),
     disable: () => unload(),
+    prefObservers,
+    toggle(on) {
+      prefs['mod.homuzen.modify-url-bar-icons.enabled'] = on;
+      for (const observer of [...prefObservers]) observer.observe(null, 'nsPref:changed', 'mod.homuzen.modify-url-bar-icons.enabled');
+    },
     close() { window.closed = true; events.get('unload')(); },
     setUrlbarAttribute(name, value) {
       if (value === null) urlbar.removeAttribute(name); else urlbar.setAttribute(name, value);
@@ -246,16 +257,11 @@ function browser(cui, { os = 'Linux', prefs = {}, extension = false } = {}) {
 
 const ids = (node) => node.children.map((child) => child.id || child.className);
 
-test('Sine metadata uses full repository URLs and ships its linked assets', () => {
+test('the Homuzen package ships this part and its preview image', () => {
   const theme = JSON.parse(fs.readFileSync(path.join(root, 'theme.json')));
-  const repo = 'https://github.com/homura-ai/modify-url-bar-icons';
-  assert.equal(theme.homepage, repo);
-  for (const [field, file] of [['readme', 'README.md'], ['image', 'preview.svg']]) {
-    assert.equal(theme[field], `${repo}/raw/refs/heads/main/${file}`);
-    assert.ok(fs.existsSync(path.join(root, file)), file);
-  }
-  assert.ok(Date.parse(theme.updatedAt) > Date.parse('2026-09-21'));
-  assert.notEqual(theme.version, '1.0.0');
+  assert.ok(theme.scripts['modify-url-bar-icons/modify-url-bar-icons.uc.js']);
+  assert.ok(fs.existsSync(path.join(root, 'modify-url-bar-icons', 'preview.svg')));
+  assert.ok(fs.readFileSync(path.join(root, theme.style), 'utf8').includes('@import url("modify-url-bar-icons/chrome.css")'));
 });
 
 test('registers a widget for each icon available on this platform, plus extension page actions', () => {
@@ -413,17 +419,34 @@ test('a second window reuses the registrations; closing the owner hands them ove
   assert.equal(b.star.parentNode, b.slot('star-button-box'), 'reload restores the placement');
 });
 
-test('package references existing files and settings default to the mod defaults', () => {
+test('settings default to off, are gated by the part, and drive the stylesheet', () => {
   const theme = JSON.parse(fs.readFileSync(path.join(root, 'theme.json')));
-  const prefs = JSON.parse(fs.readFileSync(path.join(root, theme.preferences)));
-  for (const script of Object.keys(theme.scripts)) assert.ok(fs.existsSync(path.join(root, script)));
-  assert.ok(fs.existsSync(path.join(root, theme.style)));
-  assert.equal(theme.supportsUnload, true);
-  const css = fs.readFileSync(path.join(root, theme.style), 'utf8');
+  const enabled = 'mod.homuzen.modify-url-bar-icons.enabled';
+  const prefs = JSON.parse(fs.readFileSync(path.join(root, theme.preferences)))
+    .filter((pref) => pref.property?.startsWith('mod.modify-url-bar-icons.'));
+  assert.equal(prefs.length, 2);
+  const css = fs.readFileSync(path.join(root, 'modify-url-bar-icons', 'chrome.css'), 'utf8');
+  assert.ok(css.includes(`@media -moz-pref("${enabled}")`));
   for (const pref of prefs) {
-    if (!pref.property) continue;
     // A preference Sine has not written yet reads as false, so defaults must be false.
     assert.equal(pref.defaultValue, false, pref.property);
     assert.ok(css.includes(`-moz-pref("${pref.property}")`), pref.property);
+    assert.deepEqual(pref.conditions[0], { if: { property: enabled, value: true } });
   }
+});
+
+test('turning the part off puts every icon back and turning it on restores placements', async () => {
+  const cui = new FakeCustomizableUI();
+  const b = browser(cui);
+  cui.place('mubi-star-button-box', 'zen-sidebar-top-buttons');
+  await b.settle();
+  assert.equal(b.star.parentNode, b.slot('star-button-box'));
+  b.toggle(false);
+  assert.equal(b.star.parentNode, b.actions, 'off returns the icon to the URL bar');
+  assert.equal(cui.widgets.size, 0);
+  b.toggle(true);
+  await b.settle();
+  assert.equal(b.star.parentNode, b.slot('star-button-box'), 'on restores the saved placement');
+  b.disable();
+  assert.equal(b.prefObservers.size, 0);
 });

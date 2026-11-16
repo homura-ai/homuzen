@@ -1,4 +1,4 @@
-# [Sine Mod Search](https://github.com/homura-ai/sine-mod-search)
+# Sine Mod Search
 
 Adds a search field above **Settings → Sine Mods → Installed Mods** in Zen.
 Search mod names, descriptions, settings labels, preference keys such as
@@ -14,17 +14,11 @@ and the matching words are highlighted in each card and inside its Configure
 popup, without changing the popup's controls. Sine only builds a disabled mod's
 popup after it is enabled, so those settings match but have no popup text to mark.
 
-![Installed mod search with highlighted matches](https://raw.githubusercontent.com/homura-ai/sine-mod-search/main/screenshot.png)
+![Installed mod search with highlighted matches](screenshot.png)
 
-The [README](https://raw.githubusercontent.com/homura-ai/sine-mod-search/main/README.md)
-and preview image are also linked from the mod metadata.
+## Turn it on
 
-## Installation
-
-Enter `https://github.com/homura-ai/sine-mod-search` in Sine's custom GitHub repository
-installer. Allow JavaScript mods from unofficial sources if Sine requests it.
-Reopen Settings if needed. No build step is required, and `package.json` and
-`tests/` are only for development.
+This is one part of [Homuzen](../README.md). Install Homuzen, then turn on **Enable Sine Mod Search** in **Settings → Sine Mods → Homuzen**. It has no settings of its own.
 
 ## Compatibility and checks
 
@@ -37,9 +31,9 @@ popup highlights, native popup controls, and Escape clearing also passed.
 Works in `about:preferences` and `about:settings`, waiting for Sine's asynchronously
 created UI. Sine/Cosine versions that change these internal APIs may need an update.
 The search reindexes when Sine rebuilds the installed list or the settings window
-regains focus. Disabling or removing the mod removes its UI and filtering.
+regains focus. Turning the part off, or disabling or removing Homuzen, removes its UI and filtering.
 
-Run `npm install`, then `npm test`. The DOM tests cover name and settings search,
+Run `npm install`, then `node --test --test-concurrency=1 tests/sine-mod-search.test.cjs`. The DOM tests cover name and settings search,
 highlighting in cards and settings popups,
 disabled mods, preference keys, dropdown options, delayed UI creation, rebuilt
 lists, incomplete preference files, Escape, reload, and unloading during indexing.

@@ -1,0 +1,1684 @@
+[
+  {
+    "type": "separator",
+    "label": "Every part of Homuzen is off until you turn it on here. Settings for a part appear once it is on."
+  },
+  {
+    "type": "separator",
+    "id": "homuzen-tab-state-highlighter-section",
+    "label": "Tab State Highlighter"
+  },
+  {
+    "property": "mod.homuzen.tab-state-highlighter.enabled",
+    "label": "Enable Tab State Highlighter: Loaded and unloaded effects for Essentials and regular tabs, with optional unloaded-tab fading",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "type": "separator",
+    "label": "Essentials — loaded",
+    "id": "homuzen-tab-state-highlighter-separator-0",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.loaded.effect",
+    "label": "Effect",
+    "type": "dropdown",
+    "defaultValue": "ring",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "Ring around the tab",
+        "value": "ring"
+      },
+      {
+        "label": "Glow around the whole tab",
+        "value": "tab-glow"
+      },
+      {
+        "label": "Glow over the whole tab",
+        "value": "tab-overlay-glow"
+      },
+      {
+        "label": "Glow behind the favicon",
+        "value": "glow"
+      },
+      {
+        "label": "Dot in the corner",
+        "value": "dot"
+      },
+      {
+        "label": "Ring and dot",
+        "value": "ring-dot"
+      },
+      {
+        "label": "Off",
+        "value": "off"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.loaded.color",
+    "label": "Color",
+    "type": "dropdown",
+    "defaultValue": "accent",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "Zen accent color",
+        "value": "accent"
+      },
+      {
+        "label": "Custom",
+        "value": "custom"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.loaded.effect",
+              "value": "off"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.loaded.custom-color",
+    "label": "Custom color (any CSS color; leave the field to save)",
+    "type": "string",
+    "defaultValue": "#3ddc84",
+    "placeholder": "e.g. #3ddc84, rgb(61 220 132), lime",
+    "border": "value",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "AND",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.loaded.color",
+              "value": "custom"
+            }
+          },
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.loaded.effect",
+              "value": "off"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.loaded.ring-width",
+    "label": "Ring width (px; leave the field to save)",
+    "type": "string",
+    "value": "num",
+    "defaultValue": 2,
+    "placeholder": "2",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.loaded.effect",
+              "value": "ring"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.loaded.effect",
+              "value": "ring-dot"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.loaded.glow-strength",
+    "label": "Glow strength (number with no maximum; leave the field to save)",
+    "type": "string",
+    "value": "num",
+    "defaultValue": 100,
+    "placeholder": "100",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.loaded.effect",
+              "value": "tab-glow"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.loaded.effect",
+              "value": "tab-overlay-glow"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.loaded.effect",
+              "value": "glow"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.loaded.dot-size",
+    "label": "Dot size (px; leave the field to save)",
+    "type": "string",
+    "value": "num",
+    "defaultValue": 5,
+    "placeholder": "5",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.loaded.effect",
+              "value": "dot"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.loaded.effect",
+              "value": "ring-dot"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.loaded.hide-on-selected",
+    "label": "Hide the effect on the selected loaded tab",
+    "type": "checkbox",
+    "defaultValue": false,
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.loaded.effect",
+              "value": "off"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "separator",
+    "label": "Essentials — unloaded",
+    "id": "homuzen-tab-state-highlighter-separator-8",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.unloaded.effect",
+    "label": "Effect",
+    "type": "dropdown",
+    "defaultValue": "off",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "Same as loaded tabs",
+        "value": "same"
+      },
+      {
+        "label": "Ring around the tab",
+        "value": "ring"
+      },
+      {
+        "label": "Glow around the whole tab",
+        "value": "tab-glow"
+      },
+      {
+        "label": "Glow over the whole tab",
+        "value": "tab-overlay-glow"
+      },
+      {
+        "label": "Glow behind the favicon",
+        "value": "glow"
+      },
+      {
+        "label": "Dot in the corner",
+        "value": "dot"
+      },
+      {
+        "label": "Ring and dot",
+        "value": "ring-dot"
+      },
+      {
+        "label": "Off",
+        "value": "off"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.unloaded.color",
+    "label": "Color",
+    "type": "dropdown",
+    "defaultValue": "same",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "Same as loaded tabs",
+        "value": "same"
+      },
+      {
+        "label": "Zen accent color",
+        "value": "accent"
+      },
+      {
+        "label": "Custom",
+        "value": "custom"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "AND",
+        "conditions": [
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.unloaded.effect",
+              "value": "same"
+            }
+          },
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.unloaded.effect",
+              "value": "off"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.unloaded.custom-color",
+    "label": "Custom color (any CSS color; leave the field to save)",
+    "type": "string",
+    "defaultValue": "#ff8a3d",
+    "placeholder": "e.g. #ff8a3d, rgb(255 138 61), orange",
+    "border": "value",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "AND",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.unloaded.color",
+              "value": "custom"
+            }
+          },
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.unloaded.effect",
+              "value": "same"
+            }
+          },
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.unloaded.effect",
+              "value": "off"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.unloaded.ring-width",
+    "label": "Ring width (px; leave the field to save)",
+    "type": "string",
+    "value": "num",
+    "defaultValue": 2,
+    "placeholder": "2",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.unloaded.effect",
+              "value": "ring"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.unloaded.effect",
+              "value": "ring-dot"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.unloaded.glow-strength",
+    "label": "Glow strength (number with no maximum; leave the field to save)",
+    "type": "string",
+    "value": "num",
+    "defaultValue": 100,
+    "placeholder": "100",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.unloaded.effect",
+              "value": "tab-glow"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.unloaded.effect",
+              "value": "tab-overlay-glow"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.unloaded.effect",
+              "value": "glow"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.unloaded.dot-size",
+    "label": "Dot size (px; leave the field to save)",
+    "type": "string",
+    "value": "num",
+    "defaultValue": 5,
+    "placeholder": "5",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.unloaded.effect",
+              "value": "dot"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.unloaded.effect",
+              "value": "ring-dot"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.unloaded.hide-on-selected",
+    "label": "Hide the effect on the selected unloaded tab",
+    "type": "checkbox",
+    "defaultValue": false,
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.unloaded.effect",
+              "value": "off"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "separator",
+    "label": "Essentials — unloaded fading",
+    "id": "homuzen-tab-state-highlighter-separator-16",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.unloaded.appearance",
+    "label": "Appearance",
+    "type": "dropdown",
+    "defaultValue": "dim",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "Dim",
+        "value": "dim"
+      },
+      {
+        "label": "Dim and grayscale",
+        "value": "dim-grayscale"
+      },
+      {
+        "label": "Grayscale only",
+        "value": "grayscale"
+      },
+      {
+        "label": "Browser default (mod does nothing)",
+        "value": "browser"
+      },
+      {
+        "label": "Never dim (always full color)",
+        "value": "never"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.unloaded.target",
+    "label": "Apply fading to",
+    "type": "dropdown",
+    "defaultValue": "icon",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "Favicon only",
+        "value": "icon"
+      },
+      {
+        "label": "The whole tab, background included",
+        "value": "tab"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.unloaded.appearance",
+              "value": "dim"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.unloaded.appearance",
+              "value": "dim-grayscale"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.unloaded.appearance",
+              "value": "grayscale"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.unloaded.opacity",
+    "label": "Dim amount",
+    "type": "dropdown",
+    "defaultValue": "medium",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "Light (70% opacity)",
+        "value": "light"
+      },
+      {
+        "label": "Medium (45% opacity)",
+        "value": "medium"
+      },
+      {
+        "label": "Heavy (25% opacity)",
+        "value": "heavy"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.unloaded.appearance",
+              "value": "dim"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.unloaded.appearance",
+              "value": "dim-grayscale"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.unloaded.scope",
+    "label": "Which unloaded tabs",
+    "type": "dropdown",
+    "defaultValue": "all",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "All unloaded",
+        "value": "all"
+      },
+      {
+        "label": "Only tabs unloaded with \"Unload Tab\"",
+        "value": "explicit"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.unloaded.appearance",
+              "value": "dim"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.unloaded.appearance",
+              "value": "dim-grayscale"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.unloaded.appearance",
+              "value": "grayscale"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "separator",
+    "label": "Regular tabs — loaded",
+    "id": "homuzen-tab-state-highlighter-separator-21",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.loaded.effect",
+    "label": "Effect",
+    "type": "dropdown",
+    "defaultValue": "same-essentials",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "Same as loaded Essentials",
+        "value": "same-essentials"
+      },
+      {
+        "label": "Ring around the tab",
+        "value": "ring"
+      },
+      {
+        "label": "Glow around the whole tab",
+        "value": "tab-glow"
+      },
+      {
+        "label": "Glow over the whole tab",
+        "value": "tab-overlay-glow"
+      },
+      {
+        "label": "Glow behind the favicon",
+        "value": "glow"
+      },
+      {
+        "label": "Dot in the corner",
+        "value": "dot"
+      },
+      {
+        "label": "Ring and dot",
+        "value": "ring-dot"
+      },
+      {
+        "label": "Off",
+        "value": "off"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.loaded.color",
+    "label": "Color",
+    "type": "dropdown",
+    "defaultValue": "same-essentials",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "Same as loaded Essentials",
+        "value": "same-essentials"
+      },
+      {
+        "label": "Zen accent color",
+        "value": "accent"
+      },
+      {
+        "label": "Custom",
+        "value": "custom"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.tabs.loaded.effect",
+              "value": "off"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.loaded.custom-color",
+    "label": "Custom color (any CSS color; leave the field to save)",
+    "type": "string",
+    "defaultValue": "#3ddc84",
+    "placeholder": "e.g. #3ddc84, rgb(61 220 132), lime",
+    "border": "value",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "AND",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.loaded.color",
+              "value": "custom"
+            }
+          },
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.tabs.loaded.effect",
+              "value": "off"
+            }
+          },
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.tabs.loaded.effect",
+              "value": "same-essentials"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.loaded.ring-width",
+    "label": "Ring width (px; leave the field to save)",
+    "type": "string",
+    "value": "num",
+    "defaultValue": 2,
+    "placeholder": "2",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.loaded.effect",
+              "value": "ring"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.loaded.effect",
+              "value": "ring-dot"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.loaded.glow-strength",
+    "label": "Glow strength (number with no maximum; leave the field to save)",
+    "type": "string",
+    "value": "num",
+    "defaultValue": 100,
+    "placeholder": "100",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.loaded.effect",
+              "value": "tab-glow"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.loaded.effect",
+              "value": "tab-overlay-glow"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.loaded.effect",
+              "value": "glow"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.loaded.dot-size",
+    "label": "Dot size (px; leave the field to save)",
+    "type": "string",
+    "value": "num",
+    "defaultValue": 5,
+    "placeholder": "5",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.loaded.effect",
+              "value": "dot"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.loaded.effect",
+              "value": "ring-dot"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.loaded.hide-on-selected",
+    "label": "Hide the effect on the selected loaded tab",
+    "type": "checkbox",
+    "defaultValue": false,
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.tabs.loaded.effect",
+              "value": "off"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "separator",
+    "label": "Regular tabs — unloaded",
+    "id": "homuzen-tab-state-highlighter-separator-29",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.unloaded.effect",
+    "label": "Effect",
+    "type": "dropdown",
+    "defaultValue": "same-essentials",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "Same as unloaded Essentials",
+        "value": "same-essentials"
+      },
+      {
+        "label": "Same as loaded regular tabs",
+        "value": "same"
+      },
+      {
+        "label": "Ring around the tab",
+        "value": "ring"
+      },
+      {
+        "label": "Glow around the whole tab",
+        "value": "tab-glow"
+      },
+      {
+        "label": "Glow over the whole tab",
+        "value": "tab-overlay-glow"
+      },
+      {
+        "label": "Glow behind the favicon",
+        "value": "glow"
+      },
+      {
+        "label": "Dot in the corner",
+        "value": "dot"
+      },
+      {
+        "label": "Ring and dot",
+        "value": "ring-dot"
+      },
+      {
+        "label": "Off",
+        "value": "off"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.unloaded.color",
+    "label": "Color",
+    "type": "dropdown",
+    "defaultValue": "same-essentials",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "Same as unloaded Essentials",
+        "value": "same-essentials"
+      },
+      {
+        "label": "Same as loaded regular tabs",
+        "value": "same"
+      },
+      {
+        "label": "Zen accent color",
+        "value": "accent"
+      },
+      {
+        "label": "Custom",
+        "value": "custom"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "AND",
+        "conditions": [
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.effect",
+              "value": "same"
+            }
+          },
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.effect",
+              "value": "off"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.unloaded.custom-color",
+    "label": "Custom color (any CSS color; leave the field to save)",
+    "type": "string",
+    "defaultValue": "#ff8a3d",
+    "placeholder": "e.g. #ff8a3d, rgb(255 138 61), orange",
+    "border": "value",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "AND",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.color",
+              "value": "custom"
+            }
+          },
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.effect",
+              "value": "same"
+            }
+          },
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.effect",
+              "value": "off"
+            }
+          },
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.effect",
+              "value": "same-essentials"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.unloaded.ring-width",
+    "label": "Ring width (px; leave the field to save)",
+    "type": "string",
+    "value": "num",
+    "defaultValue": 2,
+    "placeholder": "2",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.effect",
+              "value": "ring"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.effect",
+              "value": "ring-dot"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.unloaded.glow-strength",
+    "label": "Glow strength (number with no maximum; leave the field to save)",
+    "type": "string",
+    "value": "num",
+    "defaultValue": 100,
+    "placeholder": "100",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.effect",
+              "value": "tab-glow"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.effect",
+              "value": "tab-overlay-glow"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.effect",
+              "value": "glow"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.unloaded.dot-size",
+    "label": "Dot size (px; leave the field to save)",
+    "type": "string",
+    "value": "num",
+    "defaultValue": 5,
+    "placeholder": "5",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.effect",
+              "value": "dot"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.effect",
+              "value": "ring-dot"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.unloaded.hide-on-selected",
+    "label": "Hide the effect on the selected unloaded tab",
+    "type": "checkbox",
+    "defaultValue": false,
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "not": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.effect",
+              "value": "off"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "separator",
+    "label": "Regular tabs — unloaded fading",
+    "id": "homuzen-tab-state-highlighter-separator-37",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.unloaded.appearance",
+    "label": "Appearance",
+    "type": "dropdown",
+    "defaultValue": "same-essentials",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "Same as unloaded Essentials",
+        "value": "same-essentials"
+      },
+      {
+        "label": "Dim",
+        "value": "dim"
+      },
+      {
+        "label": "Dim and grayscale",
+        "value": "dim-grayscale"
+      },
+      {
+        "label": "Grayscale only",
+        "value": "grayscale"
+      },
+      {
+        "label": "Browser default (mod does nothing)",
+        "value": "browser"
+      },
+      {
+        "label": "Never dim (always full color)",
+        "value": "never"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.unloaded.target",
+    "label": "Apply fading to",
+    "type": "dropdown",
+    "defaultValue": "icon",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "Favicon only",
+        "value": "icon"
+      },
+      {
+        "label": "The whole tab, background included",
+        "value": "tab"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.appearance",
+              "value": "dim"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.appearance",
+              "value": "dim-grayscale"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.appearance",
+              "value": "grayscale"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.unloaded.opacity",
+    "label": "Dim amount",
+    "type": "dropdown",
+    "defaultValue": "medium",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "Light (70% opacity)",
+        "value": "light"
+      },
+      {
+        "label": "Medium (45% opacity)",
+        "value": "medium"
+      },
+      {
+        "label": "Heavy (25% opacity)",
+        "value": "heavy"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.appearance",
+              "value": "dim"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.appearance",
+              "value": "dim-grayscale"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "property": "mod.tab-state-highlighter.tabs.unloaded.scope",
+    "label": "Which unloaded tabs",
+    "type": "dropdown",
+    "defaultValue": "all",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "All unloaded",
+        "value": "all"
+      },
+      {
+        "label": "Only tabs unloaded with \"Unload Tab\"",
+        "value": "explicit"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.tab-state-highlighter.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.appearance",
+              "value": "dim"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.appearance",
+              "value": "dim-grayscale"
+            }
+          },
+          {
+            "if": {
+              "property": "mod.tab-state-highlighter.tabs.unloaded.appearance",
+              "value": "grayscale"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "separator",
+    "id": "homuzen-middle-click-unload-section",
+    "label": "Middle-click unload"
+  },
+  {
+    "property": "mod.homuzen.middle-click-unload.enabled",
+    "label": "Enable Middle-click unload: Middle-click a regular tab to unload it, and middle-click an unloaded tab to close it, the way Zen already treats pinned tabs",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "type": "separator",
+    "id": "homuzen-more-essentials-section",
+    "label": "More Essentials"
+  },
+  {
+    "property": "mod.homuzen.more-essentials.enabled",
+    "label": "Enable More Essentials: Raise Zen's Essentials cap to infinite or a custom number",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "property": "mod.more-essentials.mode",
+    "label": "Essentials cap",
+    "type": "dropdown",
+    "defaultValue": "infinite",
+    "placeholder": false,
+    "options": [
+      {
+        "label": "Infinite",
+        "value": "infinite"
+      },
+      {
+        "label": "Custom",
+        "value": "custom"
+      }
+    ],
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.more-essentials.enabled",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "property": "mod.more-essentials.cap",
+    "label": "Custom cap (whole number, 0 or greater; invalid values use Zen's cap)",
+    "type": "string",
+    "defaultValue": "12",
+    "placeholder": "e.g. 24",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.more-essentials.enabled",
+          "value": true
+        }
+      },
+      {
+        "operator": "OR",
+        "conditions": [
+          {
+            "if": {
+              "property": "mod.more-essentials.mode",
+              "value": "custom"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "separator",
+    "id": "homuzen-modify-url-bar-icons-section",
+    "label": "Modify URL Bar Icons"
+  },
+  {
+    "property": "mod.homuzen.modify-url-bar-icons.enabled",
+    "label": "Enable Modify URL Bar Icons: Move URL bar icons into any toolbar with Customize Toolbar drag and drop",
+    "type": "checkbox",
+    "defaultValue": false
+  },
+  {
+    "type": "separator",
+    "label": "Right-click a toolbar, choose Customize Toolbar…, and drag the URL bar icons from the palette into any toolbar. Drag them back to the palette to return them to the URL bar.",
+    "id": "homuzen-modify-url-bar-icons-separator-0",
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.modify-url-bar-icons.enabled",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "property": "mod.modify-url-bar-icons.keep-zen-hidden",
+    "label": "Keep icons hidden that Zen hides in the URL bar (bookmark star, reader view, tracking protection, permissions) even after moving them out",
+    "type": "checkbox",
+    "defaultValue": false,
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.modify-url-bar-icons.enabled",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "property": "mod.modify-url-bar-icons.hide-while-editing",
+    "label": "Hide moved page actions while the URL bar shows typed text instead of the page address",
+    "type": "checkbox",
+    "defaultValue": false,
+    "operator": "AND",
+    "conditions": [
+      {
+        "if": {
+          "property": "mod.homuzen.modify-url-bar-icons.enabled",
+          "value": true
+        }
+      }
+    ]
+  },
+  {
+    "type": "separator",
+    "id": "homuzen-sine-mod-search-section",
+    "label": "Sine Mod Search"
+  },
+  {
+    "property": "mod.homuzen.sine-mod-search.enabled",
+    "label": "Enable Sine Mod Search: A search box above the installed mods in Settings → Sine",
+    "type": "checkbox",
+    "defaultValue": false
+  }
+]

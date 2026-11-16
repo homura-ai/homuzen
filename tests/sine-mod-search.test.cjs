@@ -3,10 +3,10 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const { JSDOM } = require("jsdom");
-const source = fs.readFileSync(path.join(__dirname, "../sine-mod-search.uc.js"), "utf8");
+const source = fs.readFileSync(path.join(__dirname, "../sine-mod-search/sine-mod-search.uc.js"), "utf8");
 const pause = () => new Promise(resolve => setTimeout(resolve, 160));
 
-function setup(t, { late = false, broken = false, deferred = false } = {}) {
+function setup(t, { late = false, broken = false, deferred = false, enabled = true } = {}) {
   const dom = new JSDOM("<html><body></body></html>", {
     url: "about:preferences#paneSineMods", runScripts: "outside-only"
   });
@@ -34,6 +34,17 @@ function setup(t, { late = false, broken = false, deferred = false } = {}) {
   w.CSS = { highlights: new Map() };
   let unload;
   w.addUnloadListener = callback => { unload = callback; };
+  const prefs = new Map([["mod.homuzen.sine-mod-search.enabled", enabled]]);
+  const prefObservers = new Set();
+  w.Services = { prefs: {
+    getBoolPref: (name, fallback) => prefs.get(name) ?? fallback,
+    addObserver: (name, observer) => prefObservers.add(observer),
+    removeObserver: (name, observer) => prefObservers.delete(observer),
+  } };
+  const toggle = on => {
+    prefs.set("mod.homuzen.sine-mod-search.enabled", on);
+    for (const observer of [...prefObservers]) observer.observe(null, "nsPref:changed", "mod.homuzen.sine-mod-search.enabled");
+  };
   function render() {
     let list = w.document.getElementById("sineModsList");
     if (!list) {
@@ -58,7 +69,7 @@ function setup(t, { late = false, broken = false, deferred = false } = {}) {
     .map(card => card.getAttribute("mod-id"));
   const highlighted = () => [...(w.CSS.highlights.get("sine-mod-search")?.ranges ?? [])]
     .map(range => `${range.startContainer.parentElement.tagName.toLowerCase()}:${range.toString()}`);
-  return { w, query, visible, highlighted, render, mods, unload: () => unload(), finish: () => finish() };
+  return { w, query, visible, highlighted, render, mods, unload: () => unload(), finish: () => finish(), toggle, prefObservers };
 }
 
 test("finds names, formatted settings, preference keys and disabled-mod dropdown options", async t => {
@@ -153,11 +164,24 @@ test("reload replaces the old instance without duplicate controls", async t => {
   assert.deepEqual(s.visible(), ["beta"]);
 });
 
-test("metadata names existing files and a valid update repository", () => {
+test("the Homuzen package runs this part in the settings pages", () => {
   const root = path.join(__dirname, "..");
   const theme = JSON.parse(fs.readFileSync(path.join(root, "theme.json")));
-  for (const field of ["id", "name", "description", "homepage", "version", "createdAt", "updatedAt", "style", "fork"]) assert.ok(theme[field]);
-  assert.match(theme.homepage, /^https:\/\/github\.com\/[^/]+\/[^/]+$/);
-  assert.ok(Number.isFinite(Date.parse(theme.updatedAt)));
-  for (const file of [theme.style, ...Object.keys(theme.scripts)]) assert.ok(fs.existsSync(path.join(root, file)));
+  assert.deepEqual(theme.scripts["sine-mod-search/sine-mod-search.uc.js"].include, ["about:preferences*", "about:settings*"]);
+});
+
+test("stays off until its Homuzen preference is on, and follows it live", async t => {
+  const s = setup(t, { enabled: false });
+  await pause();
+  assert.equal(s.w.document.getElementById("sine-mod-search"), null);
+  s.toggle(true);
+  await pause();
+  assert.ok(s.w.document.getElementById("sine-mod-search"));
+  s.query("CAFE");
+  assert.deepEqual(s.visible(), ["alpha"]);
+  s.toggle(false);
+  assert.equal(s.w.document.getElementById("sine-mod-search"), null);
+  assert.deepEqual(s.visible(), ["alpha", "beta", "gamma"]);
+  s.unload();
+  assert.equal(s.prefObservers.size, 0);
 });

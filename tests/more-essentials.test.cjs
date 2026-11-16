@@ -5,10 +5,11 @@ const vm = require('node:vm');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
-const source = fs.readFileSync(path.join(root, 'more-essentials.uc.js'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'more-essentials', 'more-essentials.uc.js'), 'utf8');
 
 function browser({ delayed = false, own = false } = {}) {
-  const prefs = new Map();
+  const prefs = new Map([['mod.homuzen.more-essentials.enabled', true]]);
+  const observers = new Set();
   const timers = new Map();
   const events = new Map();
   let nextTimer = 0;
@@ -29,12 +30,21 @@ function browser({ delayed = false, own = false } = {}) {
     addUnloadListener(callback) { unload = callback; },
   };
   const context = vm.createContext({ window, console, Services: {
-    prefs: { getStringPref(name, fallback) { return prefs.get(name) ?? fallback; } },
+    prefs: {
+      getStringPref(name, fallback) { return prefs.get(name) ?? fallback; },
+      getBoolPref(name, fallback) { return prefs.get(name) ?? fallback; },
+      addObserver(name, observer) { observers.add(observer); },
+      removeObserver(name, observer) { observers.delete(observer); },
+    },
   } });
   const run = () => vm.runInContext(source, context);
   run();
   return {
-    window, manager, prefs, timers, events, run,
+    window, manager, prefs, timers, events, run, observers,
+    toggle(on) {
+      prefs.set('mod.homuzen.more-essentials.enabled', on);
+      for (const observer of [...observers]) observer.observe(null, 'nsPref:changed', 'mod.homuzen.more-essentials.enabled');
+    },
     disable: () => unload(),
     native: (value) => { nativeCap = value; },
     custom(value) {
@@ -114,24 +124,38 @@ test('window unload restores the cap; cleanup preserves a later override', () =>
   assert.equal(c.manager.maxEssentialTabs, 99);
 });
 
-test('package references existing files and settings match runtime defaults', () => {
+test('the Homuzen preference turns the cap override on and off live', () => {
+  const b = browser();
+  b.native(12);
+  assert.equal(b.manager.maxEssentialTabs, Infinity);
+  b.toggle(false);
+  assert.equal(b.manager.maxEssentialTabs, 12, 'off restores Zen\'s cap');
+  b.toggle(true);
+  assert.equal(b.manager.maxEssentialTabs, Infinity, 'on installs it again');
+  b.disable();
+  assert.equal(b.manager.maxEssentialTabs, 12);
+  assert.equal(b.observers.size, 0, 'Sine unload removes the preference observer');
+});
+
+test('More Essentials settings match the runtime defaults and appear only while the part is on', () => {
   const theme = JSON.parse(fs.readFileSync(path.join(root, 'theme.json')));
-  for (const field of ['id', 'name', 'description', 'homepage', 'version', 'createdAt', 'updatedAt', 'style', 'fork']) {
-    assert.ok(Object.hasOwn(theme, field), `Missing metadata: ${field}`);
+  assert.ok(theme.scripts['more-essentials/more-essentials.uc.js']);
+  const prefs = JSON.parse(fs.readFileSync(path.join(root, theme.preferences)))
+    .filter((pref) => pref.property?.startsWith('mod.more-essentials.'));
+  assert.equal(prefs.length, 2);
+  for (const pref of prefs) {
+    assert.deepEqual(pref.conditions[0], { if: { property: 'mod.homuzen.more-essentials.enabled', value: true } });
   }
-  assert.equal(theme.homepage, 'https://github.com/homura-ai/more-essentials');
-  assert.equal(theme.readme, 'https://raw.githubusercontent.com/homura-ai/more-essentials/main/README.md');
-  assert.equal(theme.id, 'more-essentials');
-  assert.ok(fs.existsSync(path.join(root, theme.style)));
-  assert.ok(theme.fork.includes('zen'));
-  assert.ok(Number.isFinite(Date.parse(theme.createdAt)));
-  assert.ok(Date.parse(theme.updatedAt) > Date.parse('2026-09-22T03:01:27Z'));
-  const prefs = JSON.parse(fs.readFileSync(path.join(root, theme.preferences)));
-  for (const script of Object.keys(theme.scripts)) assert.ok(fs.existsSync(path.join(root, script)));
-  assert.equal(theme.supportsUnload, true);
   const b = browser();
   for (const pref of prefs) b.prefs.set(pref.property, pref.defaultValue);
   assert.equal(b.manager.maxEssentialTabs, Infinity);
   b.prefs.set('mod.more-essentials.mode', 'custom');
+  assert.equal(b.manager.maxEssentialTabs, 12);
+});
+
+test('off by default: nothing changes until the part is turned on', () => {
+  const b = browser();
+  b.prefs.delete('mod.homuzen.more-essentials.enabled');
+  b.run();
   assert.equal(b.manager.maxEssentialTabs, 12);
 });

@@ -6,16 +6,11 @@ A Sine JavaScript mod for Zen Browser that makes the Essentials cap configurable
 - **Custom**: any whole number from 0 to 9,007,199,254,740,991. Zero prevents new Essentials.
 - Changes apply on the next add/drop or context-menu opening, across browser windows.
 - Lowering the cap never removes existing tabs. Invalid input falls back to Zen's original cap.
-- Disabling or removing the mod restores Zen's original behavior without changing `zen.tabs.essentials.max`.
+- Turning the part off, or disabling or removing Homuzen, restores Zen's original behavior without changing `zen.tabs.essentials.max`.
 
-## Install with Sine
+## Turn it on
 
-1. Open Zen's **Settings → Sine Mods**.
-2. Enter `https://github.com/homura-ai/more-essentials` in the custom GitHub repository installer.
-3. Allow JavaScript from unofficial sources in Sine if required (`sine.allow-unsafe-js`).
-4. Open **More Essentials** settings and choose **Infinite** or **Custom**. For Custom, enter a cap and leave the field to save it.
-
-This repository is the complete mod source; it has no build step or dependencies.
+This is one part of [Homuzen](../README.md). Install Homuzen, then turn on **Enable More Essentials** in **Settings → Sine Mods → Homuzen**. Its settings appear under that checkbox and keep their `mod.more-essentials.*` preference names, so settings from the standalone mod carry over.
 
 ## Implementation and compatibility
 
@@ -32,6 +27,6 @@ The live profile's six installed mod files matched the pre-update repository byt
 
 ## Verify
 
-Run `node --test --test-concurrency=1 tests/mod.test.cjs`.
+Run `node --test --test-concurrency=1 tests/more-essentials.test.cjs`.
 
 In Zen, check adding a 13th Essential with Infinite, reaching a Custom cap, lowering it below the existing count, drag-and-drop, a second window, and disabling the mod. Existing Essentials should remain after every change.

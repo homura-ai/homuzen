@@ -8,13 +8,9 @@ A configurable Sine CSS mod for Zen Browser that gives loaded and unloaded tabs 
 - Unloaded tabs can also be dimmed or desaturated independently of their marker.
 - Settings apply live in every window.
 
-## Install with Sine
+## Turn it on
 
-1. Open Zen's **Settings → Sine Mods**.
-2. Install `https://github.com/homura-ai/tab-state-highlighter` as a custom GitHub repository.
-3. Open **Tab State Highlighter** in the mods list to configure it.
-
-This repository is the complete mod source; there is no build step.
+This is one part of [Homuzen](../README.md). Install Homuzen, then turn on **Enable Tab State Highlighter** in **Settings → Sine Mods → Homuzen**. Its settings appear under that checkbox and keep their `mod.tab-state-highlighter.*` preference names, so settings from the standalone mod carry over.
 
 ## Settings
 
@@ -104,7 +100,7 @@ Those versions evaluate a setting's `conditions` before adding the setting eleme
 Run:
 
 ```sh
-node --test tests/*.test.cjs
+node --test --test-concurrency=1 tests/tab-state-highlighter.test.cjs
 ```
 
 In Zen, verify every loaded and unloaded effect, both copy options, values above `100` for glow strength, explicit versus all-unloaded fading, a selected tab, a second window, pinned tabs, Essentials, and compatibility with Neo Zen compact mode.

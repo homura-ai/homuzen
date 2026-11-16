@@ -6,9 +6,10 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const theme = JSON.parse(read('theme.json'));
-const prefs = JSON.parse(read('preferences.json')).filter((p) => p.property);
-const css = read(theme.style);
-const prefix = `mod.${theme.id}.`;
+const prefix = 'mod.tab-state-highlighter.';
+const enabled = 'mod.homuzen.tab-state-highlighter.enabled';
+const prefs = JSON.parse(read(theme.preferences)).filter((p) => p.property?.startsWith(prefix));
+const css = read('tab-state-highlighter/chrome.css');
 const byProperty = new Map(prefs.map((p) => [p.property, p]));
 
 function declarations(source) {
@@ -45,17 +46,9 @@ function conditionLeaves(conditions) {
   });
 }
 
-test('package metadata supports GitHub updates and every preference uses the new mod id', () => {
-  const homepage = new URL(theme.homepage);
-  assert.equal(theme.id, 'tab-state-highlighter');
-  assert.equal(theme.name, 'Tab State Highlighter');
-  assert.equal(homepage.origin, 'https://github.com');
-  assert.equal(homepage.pathname, `/homura-ai/${theme.id}`);
-  assert.match(theme.version, /^2\./);
-  assert.equal(theme.readme, `https://raw.githubusercontent.com/homura-ai/${theme.id}/main/README.md`);
-  assert.ok(Date.parse(theme.updatedAt) > Date.parse(theme.createdAt));
-  assert.ok(fs.existsSync(path.join(root, theme.style)));
-  assert.ok(fs.existsSync(path.join(root, theme.preferences)));
+test('every Tab State Highlighter preference is valid and shown only while the part is on', () => {
+  assert.ok(prefs.length > 0);
+  assert.ok(read(theme.style).includes('@import url("tab-state-highlighter/chrome.css")'));
 
   for (const pref of prefs) {
     assert.ok(pref.property.startsWith(prefix), pref.property);
@@ -67,7 +60,9 @@ test('package metadata supports GitHub updates and every preference uses the new
     if (conditionLeaves(pref.conditions).length > 1 && (pref.conditions ?? []).some((c) => c.not)) {
       assert.equal(pref.operator, 'AND', pref.property);
     }
-    for (const { property, value } of conditionLeaves(pref.conditions)) {
+    assert.equal(pref.operator, 'AND', pref.property);
+    assert.deepEqual(pref.conditions[0], { if: { property: enabled, value: true } }, pref.property);
+    for (const { property, value } of conditionLeaves(pref.conditions).filter((leaf) => leaf.property !== enabled)) {
       const referenced = byProperty.get(property);
       assert.ok(referenced, `${pref.property} condition references ${property}`);
       assert.ok(referenced.options.some((o) => o.value === value), `${property}=${value}`);
@@ -79,6 +74,7 @@ test('every stylesheet preference and generated variable has a matching setting'
   const uses = [...css.matchAll(/-moz-pref\("([^"]+)"(?:,\s*"([^"]*)")?\)/g)];
   assert.ok(uses.length > 0);
   for (const [, property, value] of uses) {
+    if (property === enabled) continue;
     const pref = byProperty.get(property);
     assert.ok(pref, `unknown preference ${property}`);
     if (value === undefined) assert.equal(pref.type, 'checkbox', property);
@@ -283,10 +279,10 @@ test('explicit fading scope only dims discarded tabs and never restores full col
   assert.ok(never.selectors.some((s) => s.includes('[pending]')));
 });
 
-test('README documents every setting and the renamed repository', () => {
-  const readme = read('README.md');
+test('README documents every setting and the Homuzen repository', () => {
+  const readme = read('tab-state-highlighter/README.md');
   assert.ok(readme.startsWith('# Tab State Highlighter'));
-  assert.ok(readme.includes(theme.homepage));
+  assert.ok(read('README.md').includes(theme.homepage));
   for (const pref of prefs) {
     const label = pref.label.split(' (')[0];
     assert.ok(readme.includes(label), `README is missing "${label}"`);

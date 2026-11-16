@@ -21,21 +21,16 @@ Every icon becomes an entry in the customize palette. Drag one into the sidebar'
 | Share, Split view, Taskbar tab, Trust panel | Only listed where the feature exists (macOS/Windows, or the Firefox pref is on) |
 | *Extension name* | Any page action an extension puts in the URL bar |
 
-Placements are stored by Firefox's customization state, so they survive restarts and disabling and re-enabling the mod.
+Placements are stored by Firefox's customization state, so they survive restarts and turning the part off and on again.
 
 ## Settings
 
 - **Keep icons hidden that Zen hides** (off by default): Zen hides the bookmark star, reader view, tracking protection and permission icons in its URL bar. Moved icons are shown again unless this is on.
 - **Hide moved page actions while the URL bar is being edited** (off by default): mirrors how Firefox hides page actions while the bar shows typed text instead of the page address.
 
-## Install with Sine
+## Turn it on
 
-1. In Zen's **Settings → Sine Mods**, open the custom GitHub repository installer.
-2. Enter `https://github.com/homura-ai/modify-url-bar-icons`.
-3. Allow JavaScript from unofficial sources in Sine if required (`sine.allow-unsafe-js`).
-4. Right-click a toolbar, choose **Customize Toolbar…**, and drag the URL bar icons where you want them.
-
-This folder is the complete mod source; it has no build step or dependencies.
+This is one part of [Homuzen](../README.md). Install Homuzen, then turn on **Enable Modify URL Bar Icons** in **Settings → Sine Mods → Homuzen**. Its settings appear under that checkbox and keep their `mod.modify-url-bar-icons.*` preference names, so settings from the standalone mod carry over.
 
 ## Implementation and compatibility
 
@@ -51,6 +46,6 @@ Because this touches browser internals (`CustomizableUI`, `BrowserPageActions`, 
 
 ## Verify
 
-Run `node --test --test-concurrency=1 tests/mod.test.cjs`.
+Run `node --test --test-concurrency=1 tests/modify-url-bar-icons.test.cjs`.
 
-In Zen, open Customize Toolbar, drag the bookmark star into the sidebar top buttons, then check: it toggles bookmarks, survives a restart, follows a second window, returns to the URL bar when dragged back to the palette, and disabling the mod puts every icon back.
+In Zen, open Customize Toolbar, drag the bookmark star into the sidebar top buttons, then check: it toggles bookmarks, survives a restart, follows a second window, returns to the URL bar when dragged back to the palette, and turning the part off puts every icon back.

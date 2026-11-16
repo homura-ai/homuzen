@@ -1,0 +1,10 @@
+/* Homuzen — Sine mod for Zen Browser.
+ *
+ * Each part's sheet wraps all of its rules in
+ * @media -moz-pref("mod.homuzen.<part>.enabled"), so a part has no effect
+ * until it is turned on in the mod's settings. The script-only parts
+ * (middle-click unload, More Essentials, Sine Mod Search) check the same kind
+ * of preference in their scripts.
+ */
+@import url("tab-state-highlighter/chrome.css");
+@import url("modify-url-bar-icons/chrome.css");

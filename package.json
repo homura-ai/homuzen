@@ -1,0 +1,6 @@
+{
+  "name": "homuzen",
+  "private": true,
+  "scripts": { "test": "node --test --test-concurrency=1 tests/*.test.cjs" },
+  "devDependencies": { "jsdom": "24.1.3" }
+}
