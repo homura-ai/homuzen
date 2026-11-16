@@ -724,7 +724,7 @@
         "value": "all"
       },
       {
-        "label": "Only tabs unloaded with \"Unload Tab\"",
+        "label": "Only tabs unloaded with “Unload Tab”",
         "value": "explicit"
       }
     ],
@@ -1503,7 +1503,7 @@
         "value": "all"
       },
       {
-        "label": "Only tabs unloaded with \"Unload Tab\"",
+        "label": "Only tabs unloaded with “Unload Tab”",
         "value": "explicit"
       }
     ],

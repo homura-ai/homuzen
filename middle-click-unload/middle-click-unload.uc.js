@@ -30,8 +30,15 @@
     const unload = async (tabs) => {
       const selected = tabs.find((tab) => tab.selected);
       if (selected) window.gBrowser.selectedTab = window.gBrowser._findTabToBlurTo(selected, tabs);
+      // Undefined means a beforeunload prompt kept the page: leave it open.
       const done = await window.gBrowser.explicitUnloadTabs(tabs);
-      if (done) for (const tab of tabs) tab.removeAttribute("discarded");
+      if (!done) return;
+      for (const tab of tabs) {
+        tab.removeAttribute("discarded");
+        // Firefox reports success but keeps some tabs loaded (about:robots,
+        // for one). Close those, so the click is never a no-op.
+        if (!tab.hasAttribute("pending") && !tab.closing) window.gBrowser.removeTab(tab, { animate: true });
+      }
     };
 
     // Capture phase on the tab strip runs before Firefox's own middle-click

@@ -49,7 +49,7 @@ Glow strength changes the opacity of three fixed-radius glow layers. Larger numb
 | Appearance | Dim · Dim and grayscale · Grayscale only · Browser default · Never dim | Dim |
 | Apply fading to | Favicon only · Whole tab | Favicon only |
 | Dim amount | Light (70%) · Medium (45%) · Heavy (25%) | Medium |
-| Which unloaded tabs | All unloaded · Only tabs unloaded with "Unload Tab" | All unloaded |
+| Which unloaded tabs | All unloaded · Only tabs unloaded with “Unload Tab” | All unloaded |
 
 Firefox marks unloaded tabs with `[pending]` and tabs unloaded explicitly with `[discarded]`. **Browser default** leaves Firefox's own unloaded-tab styling untouched. **Never dim** restores full opacity while leaving a configured marker effect active.
 

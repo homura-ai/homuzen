@@ -24,7 +24,7 @@ class Tab {
   closest(selector) { return selector === 'tab' ? this : null; }
 }
 
-function browser({ enabled = true } = {}) {
+function browser({ enabled = true, blocked = false } = {}) {
   const prefs = new Map([[PREF, enabled]]);
   const prefObservers = new Set();
   const listeners = new Set();
@@ -35,6 +35,7 @@ function browser({ enabled = true } = {}) {
     other: new Tab('other'),
     unloaded: new Tab('unloaded', { pending: true }),
     pinned: new Tab('pinned', { pinned: true }),
+    about: new Tab('about-robots'),
   };
   const gBrowser = {
     tabContainer: {
@@ -45,9 +46,14 @@ function browser({ enabled = true } = {}) {
     },
     get selectedTab() { return Object.values(tabs).find((tab) => tab.selected); },
     set selectedTab(tab) { for (const item of Object.values(tabs)) item.selected = item === tab; log.push(`select ${tab.name}`); },
+    removeTab(tab) { tab.closing = true; log.push(`close ${tab.name}`); },
     _findTabToBlurTo(tab, exclude) { return exclude.includes(tabs.other) ? tabs.loaded : tabs.other; },
     async explicitUnloadTabs(list) {
-      for (const tab of list) { tab.setAttribute('pending', ''); tab.setAttribute('discarded', 'true'); }
+      if (blocked) return undefined;
+      for (const tab of list) {
+        if (tab.name.startsWith('about')) continue; // Firefox keeps some pages loaded
+        tab.setAttribute('pending', ''); tab.setAttribute('discarded', 'true');
+      }
       log.push(`unload ${list.map((tab) => tab.name).join(',')}`);
       return true;
     },
@@ -103,6 +109,16 @@ test('middle-clicking an unloaded regular tab leaves Firefox to close it', async
   // The second middle click on a tab this part just unloaded closes it.
   await b.click(b.tabs.loaded);
   assert.equal(await b.click(b.tabs.loaded), true);
+});
+
+test('a tab Firefox will not unload is closed, but a kept beforeunload page stays open', async () => {
+  const b = browser();
+  await b.click(b.tabs.about);
+  assert.deepEqual(b.log, ['unload about-robots', 'close about-robots']);
+  const c = browser({ blocked: true });
+  await c.click(c.tabs.loaded);
+  assert.deepEqual(c.log, []);
+  assert.equal(c.tabs.loaded.closing, false);
 });
 
 test('the selected tab is switched away from before it unloads', async () => {

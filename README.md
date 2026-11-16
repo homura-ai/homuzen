@@ -27,6 +27,7 @@ Zen already gives pinned tabs this behavior (`zen.pinned-tab-manager.wheel-close
 
 - **Loaded tab:** the middle click unloads it instead of closing it. If it is the selected tab, Zen switches to the next tab first.
 - **Unloaded tab:** the middle click closes it, as Firefox normally does. So two middle clicks close a loaded tab.
+- **A tab Firefox won't unload** (some `about:` pages such as about:robots): the middle click closes it, so a click is never a no-op.
 - **Split view:** every tab in the split unloads together.
 - **Open Glance preview:** the first middle click closes the preview, as Zen does for pinned tabs.
 - Pinned tabs, Essentials and multiselected tabs keep Zen's own behavior.

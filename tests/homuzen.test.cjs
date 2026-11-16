@@ -54,3 +54,19 @@ test('every stylesheet and script is gated by its part preference', () => {
     assert.equal(code.match(/addUnloadListener/g).length, 1, script);
   }
 });
+
+test('no label or option breaks the markup Sine builds the settings dialog from', () => {
+  // Sine pastes labels into XUL source (label="..."), so quotes and angle
+  // brackets would end the dialog early and hide every later setting.
+  const walk = (value, where) => {
+    if (Array.isArray(value)) return value.forEach((item, i) => walk(item, `${where}[${i}]`));
+    if (!value || typeof value !== 'object') return;
+    for (const [name, item] of Object.entries(value)) {
+      if (['label', 'value', 'placeholder'].includes(name) && typeof item === 'string') {
+        assert.doesNotMatch(item, /["<>&]/, `${where}.${name}: ${item}`);
+      }
+      walk(item, `${where}.${name}`);
+    }
+  };
+  walk(prefs, 'preferences');
+});
