@@ -6,7 +6,8 @@
  *
  * Compatibility contract. This sheet only ever sets:
  *   .tabbrowser-tab      overflow for the outside whole-tab glow
- *   .tab-background      outline, outline-offset; ::after for whole-tab glows
+ *   .tab-background      outline, outline-offset
+ *   .tab-stack::after    whole-tab glow layers
  *   .tab-icon-image      opacity, filter, transition
  *   .tab-stack           opacity, filter, transition
  *   .tab-content::after  the dot marker
@@ -145,11 +146,12 @@
 
     @media -moz-pref("mod.tab-state-highlighter.loaded.effect", "tab-glow") {
       overflow: visible !important;
-      & .tab-background::after {
+      & .tab-stack::after {
         content: "";
         position: absolute;
         inset: 0;
-        border-radius: inherit;
+        border-radius: var(--tab-border-radius, 10px);
+        z-index: 0;
         background: color-mix(in srgb, var(--tsh-loaded-glow-color) 20%, transparent);
         box-shadow:
           0 0 var(--tsh-glow-radius) var(--tsh-loaded-glow-color),
@@ -160,11 +162,12 @@
     }
 
     @media -moz-pref("mod.tab-state-highlighter.loaded.effect", "tab-overlay-glow") {
-      & .tab-background::after {
+      & .tab-stack::after {
         content: "";
         position: absolute;
         inset: 0;
-        border-radius: inherit;
+        border-radius: var(--tab-border-radius, 10px);
+        z-index: 0;
         background: radial-gradient(ellipse at center, var(--tsh-loaded-glow-color) 0%, transparent 78%);
         pointer-events: none;
       }
@@ -204,7 +207,7 @@
       & .tab-background {
         outline: none !important;
       }
-      & .tab-background::after {
+      & .tab-stack::after {
         content: none !important;
       }
       & .tab-icon-image {
@@ -232,11 +235,12 @@
 
       @media -moz-pref("mod.tab-state-highlighter.unloaded.effect", "tab-glow") {
         overflow: visible !important;
-        & .tab-background::after {
+        & .tab-stack::after {
           content: "";
           position: absolute;
           inset: 0;
-          border-radius: inherit;
+          border-radius: var(--tab-border-radius, 10px);
+          z-index: 0;
           background: color-mix(in srgb, var(--tsh-unloaded-glow-color) 20%, transparent);
           box-shadow:
             0 0 var(--tsh-glow-radius) var(--tsh-unloaded-glow-color),
@@ -247,11 +251,12 @@
       }
 
       @media -moz-pref("mod.tab-state-highlighter.unloaded.effect", "tab-overlay-glow") {
-        & .tab-background::after {
+        & .tab-stack::after {
           content: "";
           position: absolute;
           inset: 0;
-          border-radius: inherit;
+          border-radius: var(--tab-border-radius, 10px);
+          z-index: 0;
           background: radial-gradient(ellipse at center, var(--tsh-unloaded-glow-color) 0%, transparent 78%);
           pointer-events: none;
         }
@@ -307,11 +312,12 @@
 
         @media -moz-pref("mod.tab-state-highlighter.loaded.effect", "tab-glow") {
           overflow: visible !important;
-          & .tab-background::after {
+          & .tab-stack::after {
             content: "";
             position: absolute;
             inset: 0;
-            border-radius: inherit;
+            border-radius: var(--tab-border-radius, 10px);
+            z-index: 0;
             background: color-mix(in srgb, var(--tsh-loaded-glow-color) 20%, transparent);
             box-shadow:
               0 0 var(--tsh-glow-radius) var(--tsh-loaded-glow-color),
@@ -322,11 +328,12 @@
         }
 
         @media -moz-pref("mod.tab-state-highlighter.loaded.effect", "tab-overlay-glow") {
-          & .tab-background::after {
+          & .tab-stack::after {
             content: "";
             position: absolute;
             inset: 0;
-            border-radius: inherit;
+            border-radius: var(--tab-border-radius, 10px);
+            z-index: 0;
             background: radial-gradient(ellipse at center, var(--tsh-loaded-glow-color) 0%, transparent 78%);
             pointer-events: none;
           }
@@ -369,7 +376,7 @@
       & .tab-background {
         outline: none !important;
       }
-      & .tab-background::after {
+      & .tab-stack::after {
         content: none !important;
       }
       & .tab-icon-image {
@@ -532,11 +539,12 @@
 
       @media -moz-pref("mod.tab-state-highlighter.tabs.loaded.effect", "tab-glow") {
         overflow: visible !important;
-        & .tab-background::after {
+        & .tab-stack::after {
           content: "";
           position: absolute;
           inset: 0;
-          border-radius: inherit;
+          border-radius: var(--tab-border-radius, 10px);
+          z-index: 0;
           background: color-mix(in srgb, var(--tsh-tabs-loaded-glow-color) 20%, transparent);
           box-shadow:
             0 0 var(--tsh-glow-radius) var(--tsh-tabs-loaded-glow-color),
@@ -547,11 +555,12 @@
       }
 
       @media -moz-pref("mod.tab-state-highlighter.tabs.loaded.effect", "tab-overlay-glow") {
-        & .tab-background::after {
+        & .tab-stack::after {
           content: "";
           position: absolute;
           inset: 0;
-          border-radius: inherit;
+          border-radius: var(--tab-border-radius, 10px);
+          z-index: 0;
           background: radial-gradient(ellipse at center, var(--tsh-tabs-loaded-glow-color) 0%, transparent 78%);
           pointer-events: none;
         }
@@ -591,7 +600,7 @@
         & .tab-background {
           outline: none !important;
         }
-        & .tab-background::after {
+        & .tab-stack::after {
           content: none !important;
         }
         & .tab-icon-image {
@@ -621,11 +630,12 @@
 
         @media -moz-pref("mod.tab-state-highlighter.tabs.unloaded.effect", "tab-glow") {
           overflow: visible !important;
-          & .tab-background::after {
+          & .tab-stack::after {
             content: "";
             position: absolute;
             inset: 0;
-            border-radius: inherit;
+            border-radius: var(--tab-border-radius, 10px);
+            z-index: 0;
             background: color-mix(in srgb, var(--tsh-tabs-unloaded-glow-color) 20%, transparent);
             box-shadow:
               0 0 var(--tsh-glow-radius) var(--tsh-tabs-unloaded-glow-color),
@@ -636,11 +646,12 @@
         }
 
         @media -moz-pref("mod.tab-state-highlighter.tabs.unloaded.effect", "tab-overlay-glow") {
-          & .tab-background::after {
+          & .tab-stack::after {
             content: "";
             position: absolute;
             inset: 0;
-            border-radius: inherit;
+            border-radius: var(--tab-border-radius, 10px);
+            z-index: 0;
             background: radial-gradient(ellipse at center, var(--tsh-tabs-unloaded-glow-color) 0%, transparent 78%);
             pointer-events: none;
           }
@@ -696,11 +707,12 @@
 
           @media -moz-pref("mod.tab-state-highlighter.tabs.loaded.effect", "tab-glow") {
             overflow: visible !important;
-            & .tab-background::after {
+            & .tab-stack::after {
               content: "";
               position: absolute;
               inset: 0;
-              border-radius: inherit;
+              border-radius: var(--tab-border-radius, 10px);
+              z-index: 0;
               background: color-mix(in srgb, var(--tsh-tabs-loaded-glow-color) 20%, transparent);
               box-shadow:
                 0 0 var(--tsh-glow-radius) var(--tsh-tabs-loaded-glow-color),
@@ -711,11 +723,12 @@
           }
 
           @media -moz-pref("mod.tab-state-highlighter.tabs.loaded.effect", "tab-overlay-glow") {
-            & .tab-background::after {
+            & .tab-stack::after {
               content: "";
               position: absolute;
               inset: 0;
-              border-radius: inherit;
+              border-radius: var(--tab-border-radius, 10px);
+              z-index: 0;
               background: radial-gradient(ellipse at center, var(--tsh-tabs-loaded-glow-color) 0%, transparent 78%);
               pointer-events: none;
             }
@@ -758,7 +771,7 @@
         & .tab-background {
           outline: none !important;
         }
-        & .tab-background::after {
+        & .tab-stack::after {
           content: none !important;
         }
         & .tab-icon-image {
@@ -856,11 +869,12 @@
 
       @media -moz-pref("mod.tab-state-highlighter.loaded.effect", "tab-glow") {
         overflow: visible !important;
-        & .tab-background::after {
+        & .tab-stack::after {
           content: "";
           position: absolute;
           inset: 0;
-          border-radius: inherit;
+          border-radius: var(--tab-border-radius, 10px);
+          z-index: 0;
           background: color-mix(in srgb, var(--tsh-loaded-glow-color) 20%, transparent);
           box-shadow:
             0 0 var(--tsh-glow-radius) var(--tsh-loaded-glow-color),
@@ -871,11 +885,12 @@
       }
 
       @media -moz-pref("mod.tab-state-highlighter.loaded.effect", "tab-overlay-glow") {
-        & .tab-background::after {
+        & .tab-stack::after {
           content: "";
           position: absolute;
           inset: 0;
-          border-radius: inherit;
+          border-radius: var(--tab-border-radius, 10px);
+          z-index: 0;
           background: radial-gradient(ellipse at center, var(--tsh-loaded-glow-color) 0%, transparent 78%);
           pointer-events: none;
         }
@@ -915,7 +930,7 @@
         & .tab-background {
           outline: none !important;
         }
-        & .tab-background::after {
+        & .tab-stack::after {
           content: none !important;
         }
         & .tab-icon-image {
@@ -945,11 +960,12 @@
 
         @media -moz-pref("mod.tab-state-highlighter.unloaded.effect", "tab-glow") {
           overflow: visible !important;
-          & .tab-background::after {
+          & .tab-stack::after {
             content: "";
             position: absolute;
             inset: 0;
-            border-radius: inherit;
+            border-radius: var(--tab-border-radius, 10px);
+            z-index: 0;
             background: color-mix(in srgb, var(--tsh-unloaded-glow-color) 20%, transparent);
             box-shadow:
               0 0 var(--tsh-glow-radius) var(--tsh-unloaded-glow-color),
@@ -960,11 +976,12 @@
         }
 
         @media -moz-pref("mod.tab-state-highlighter.unloaded.effect", "tab-overlay-glow") {
-          & .tab-background::after {
+          & .tab-stack::after {
             content: "";
             position: absolute;
             inset: 0;
-            border-radius: inherit;
+            border-radius: var(--tab-border-radius, 10px);
+            z-index: 0;
             background: radial-gradient(ellipse at center, var(--tsh-unloaded-glow-color) 0%, transparent 78%);
             pointer-events: none;
           }
@@ -1020,11 +1037,12 @@
 
           @media -moz-pref("mod.tab-state-highlighter.loaded.effect", "tab-glow") {
             overflow: visible !important;
-            & .tab-background::after {
+            & .tab-stack::after {
               content: "";
               position: absolute;
               inset: 0;
-              border-radius: inherit;
+              border-radius: var(--tab-border-radius, 10px);
+              z-index: 0;
               background: color-mix(in srgb, var(--tsh-loaded-glow-color) 20%, transparent);
               box-shadow:
                 0 0 var(--tsh-glow-radius) var(--tsh-loaded-glow-color),
@@ -1035,11 +1053,12 @@
           }
 
           @media -moz-pref("mod.tab-state-highlighter.loaded.effect", "tab-overlay-glow") {
-            & .tab-background::after {
+            & .tab-stack::after {
               content: "";
               position: absolute;
               inset: 0;
-              border-radius: inherit;
+              border-radius: var(--tab-border-radius, 10px);
+              z-index: 0;
               background: radial-gradient(ellipse at center, var(--tsh-loaded-glow-color) 0%, transparent 78%);
               pointer-events: none;
             }
@@ -1082,7 +1101,7 @@
         & .tab-background {
           outline: none !important;
         }
-        & .tab-background::after {
+        & .tab-stack::after {
           content: none !important;
         }
         & .tab-icon-image {

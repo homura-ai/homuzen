@@ -121,7 +121,7 @@ test('the stylesheet only changes the documented tab sub-elements', () => {
   const allowed = {
     '.tabbrowser-tab': ['overflow'],
     '.tab-background': ['outline', 'outline-offset'],
-    '.tab-background::after': null,
+    '.tab-stack::after': null,
     '.tab-icon-image': ['opacity', 'filter', 'transition'],
     '.tab-stack': ['opacity', 'filter', 'transition'],
     '.tab-content': ['position'],
@@ -139,7 +139,7 @@ test('the stylesheet only changes the documented tab sub-elements', () => {
       if (allowed[key] && element !== '.tab-content::after') assert.match(d.value, /!important$/, `${d.property} on ${element}`);
     }
   }
-  assert.ok(!/\.tab-background::before/.test(code));
+  assert.ok(!/\.tab-background::(?:before|after)/.test(code), 'theme background layers must stay untouched');
   assert.ok(code.includes('[zen-essential="true"]'));
 });
 
@@ -207,7 +207,7 @@ test('outside and overlay whole-tab glows remain separate options', () => {
   );
   assert.equal(wholeTabGlows.length, 9);
   for (const d of wholeTabGlows) {
-    assert.deepEqual(targets(d), ['.tab-background::after'], path_(d));
+    assert.deepEqual(targets(d), ['.tab-stack::after'], path_(d));
     assert.equal([...d.value.matchAll(/0 0 var\(--tsh-glow-radius\)/g)].length, 3);
   }
 
@@ -221,7 +221,7 @@ test('outside and overlay whole-tab glows remain separate options', () => {
     d.context.some((c) => c.includes('"tab-overlay-glow"'))
   );
   assert.equal(overlayGlows.length, 9);
-  for (const d of overlayGlows) assert.deepEqual(targets(d), ['.tab-background::after'], path_(d));
+  for (const d of overlayGlows) assert.deepEqual(targets(d), ['.tab-stack::after'], path_(d));
 });
 
 test('numeric marker controls are state-specific and glow strength is uncapped without changing radius', () => {
@@ -293,4 +293,18 @@ test('README documents every setting and the renamed repository', () => {
   }
   assert.ok(readme.includes('Same as loaded tabs'));
   assert.ok(readme.includes('Neo Zen'));
+});
+
+// Neo Zen makes its regular-tab background ::after transparent; Arc also
+// reserves background pseudo-elements for container colors and button hover.
+test('whole-tab glows use an independent non-interactive layer', () => {
+  const layers = decls.filter((d) => targets(d).includes('.tab-stack::after'));
+  assert.equal(layers.filter((d) => d.property === 'content' && d.value === '""').length, 18);
+  for (const d of layers.filter((d) => d.property === 'content' && d.value === '""')) {
+    const sameRule = layers.filter((other) => JSON.stringify(other.context) === JSON.stringify(d.context));
+    for (const [property, value] of Object.entries({
+      position: 'absolute', inset: '0', 'border-radius': 'var(--tab-border-radius, 10px)',
+      'z-index': '0', 'pointer-events': 'none',
+    })) assert.ok(sameRule.some((other) => other.property === property && other.value === value), `${property} on ${path_(d)}`);
+  }
 });
