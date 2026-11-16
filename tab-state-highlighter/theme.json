@@ -1,0 +1,14 @@
+{
+  "id": "tab-state-highlighter",
+  "name": "Tab State Highlighter",
+  "description": "Apply separate loaded and unloaded effects to Essentials and regular tabs, with optional unloaded-tab fading.",
+  "homepage": "https://github.com/homura-ai/tab-state-highlighter",
+  "version": "2.1.1",
+  "createdAt": "2026-09-21",
+  "updatedAt": "2026-11-16T20:06:00Z",
+  "style": "chrome.css",
+  "preferences": "preferences.json",
+  "tags": ["chrome", "tabs", "tab-state"],
+  "fork": ["zen"],
+  "readme": "https://raw.githubusercontent.com/homura-ai/tab-state-highlighter/main/README.md"
+}
