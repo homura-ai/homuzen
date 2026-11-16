@@ -50,8 +50,9 @@ test('package metadata supports GitHub updates and every preference uses the new
   assert.equal(theme.id, 'tab-state-highlighter');
   assert.equal(theme.name, 'Tab State Highlighter');
   assert.equal(homepage.origin, 'https://github.com');
-  assert.equal(homepage.pathname, `/01-1/${theme.id}`);
+  assert.equal(homepage.pathname, `/homura-ai/${theme.id}`);
   assert.match(theme.version, /^2\./);
+  assert.equal(theme.readme, `https://raw.githubusercontent.com/homura-ai/${theme.id}/main/README.md`);
   assert.ok(Date.parse(theme.updatedAt) > Date.parse(theme.createdAt));
   assert.ok(fs.existsSync(path.join(root, theme.style)));
   assert.ok(fs.existsSync(path.join(root, theme.preferences)));

@@ -11,7 +11,7 @@ A configurable Sine CSS mod for Zen Browser that gives loaded and unloaded tabs 
 ## Install with Sine
 
 1. Open Zen's **Settings → Sine Mods**.
-2. Install `https://github.com/01-1/tab-state-highlighter` as a custom GitHub repository.
+2. Install `https://github.com/homura-ai/tab-state-highlighter` as a custom GitHub repository.
 3. Open **Tab State Highlighter** in the mods list to configure it.
 
 This repository is the complete mod source; there is no build step.
