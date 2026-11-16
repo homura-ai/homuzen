@@ -54,10 +54,11 @@
       if (tabs.every((item) => item.hasAttribute("pending"))) return;
       event.stopPropagation();
       event.preventDefault();
-      if (tab.hasAttribute("glance-id") && window.gZenGlanceManager) {
-        // An open Glance preview belongs to this tab; close it first, as Zen
-        // does for pinned tabs, and leave the tab itself loaded.
-        window.gZenGlanceManager.manageTabClose(tab.glanceTab);
+      // An open Glance preview in any of these tabs closes first, as Zen does
+      // for pinned tabs, and the tabs stay loaded.
+      const glanceOwner = tabs.find((item) => item.hasAttribute("glance-id"));
+      if (glanceOwner && window.gZenGlanceManager) {
+        window.gZenGlanceManager.manageTabClose(glanceOwner.glanceTab);
         return;
       }
       unload(tabs).catch((error) => console.error("[Homuzen] Could not unload the tab:", error));

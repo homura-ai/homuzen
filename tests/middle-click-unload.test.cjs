@@ -150,6 +150,16 @@ test('a split view unloads together, and an open Glance closes first', async () 
   c.tabs.loaded.glanceTab = 'preview';
   assert.equal(await c.click(c.tabs.loaded), false);
   assert.deepEqual(c.log, ['close glance preview']);
+
+  // The Glance can belong to the other half of the split.
+  const d = browser();
+  const split = { hasAttribute: (name) => name === 'split-view-group', tabs: [d.tabs.loaded, d.tabs.other] };
+  d.tabs.loaded.group = split;
+  d.tabs.other.group = split;
+  d.tabs.other.setAttribute('glance-id', '2');
+  d.tabs.other.glanceTab = 'side preview';
+  await d.click(d.tabs.loaded);
+  assert.deepEqual(d.log, ['close glance side preview']);
 });
 
 test('off by default, follows its preference live, and unloads cleanly', async () => {
