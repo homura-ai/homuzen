@@ -19,7 +19,7 @@ The parts were separate mods (homura-ai/tab-state-highlighter, more-essentials, 
 3. Open Homuzen's settings and turn on the parts you want.
 4. If the standalone mods are installed, remove them so they don't run twice.
 
-Homuzen is part of Homura's zen-theme setup, which installs it and turns on the parts she uses. It works on its own too.
+Homuzen depends on [homu-zen-theme](https://github.com/homura-ai/homu-zen-theme), Homura's Zen theme kept as code (the other mods, theme settings and the tool that applies them to a profile). It is a git submodule at `homu-zen-theme/`, so clone with `git clone --recurse-submodules`, or run `git submodule update --init` in an existing clone. Sine installs only the mod itself and ignores the submodule, so the mod also works on its own.
 
 ## Middle-click unload
 
@@ -43,6 +43,7 @@ The script listens for middle clicks on the tab strip in the capture phase, so i
 | `chrome.css` | Imports each part's stylesheet |
 | `<part>/` | One folder per part: its script or stylesheet and its own README |
 | `tests/` | One test file per part plus `homuzen.test.cjs` for the package |
+| `homu-zen-theme/` | Submodule: the theme setup Homuzen depends on (private repo) |
 
 Each stylesheet wraps its rules in `@media -moz-pref("mod.homuzen.<part>.enabled")`. Each script starts its part when the preference is on and stops it when it goes off. Sine keeps one unload hook per script file, so the script's gate owns that hook and stops the part when Sine disables, removes or reloads Homuzen.
 

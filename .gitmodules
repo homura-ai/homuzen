@@ -1,0 +1,3 @@
+[submodule "homu-zen-theme"]
+	path = homu-zen-theme
+	url = git@github.com:homura-ai/homu-zen-theme.git
