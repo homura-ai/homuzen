@@ -1,0 +1,35 @@
+@media not -moz-pref("neo.features.disabled") {
+    @media not -moz-pref("neo.features.menus.disabled") {
+        :is(menupopup, panel):not(#notification-popup, #appMenu-notification-popup) {
+            @media (-moz-platform: linux) {
+                --panel-background-color: var(--Neo-Popup-BG-Color) !important;
+                --panel-border-color: transparent !important;
+            }
+
+            &::part(content) {
+                display: flex;
+                box-sizing: border-box;
+
+                padding: var(--panel-padding);
+                color: var(--panel-text-color);
+                background: var(--panel-background-color);
+                border: transparent !important;
+            }
+        }
+
+        menu,
+        menuitem {
+            &:where([_moz-menuactive]:not([disabled])) {
+                background-color: color-mix(in srgb, var(--Neo-Background) 15%, var(--zen-primary-color) 60%) !important;
+            }
+        }
+
+        /* NeoZen: This changes the color when hovering an item in the application popup menu */
+        :is(panelview .toolbarbutton-1, toolbarbutton.subviewbutton, .widget-overflow-list .toolbarbutton-1, .toolbaritem-combined-buttons:is(:not([cui-areatype="toolbar"]), [overflowedItem="true"]) > toolbarbutton) {
+            &:not([disabled]):hover {
+                color: var(--Neo-Elements) !important;
+                background-color: color-mix(in srgb, var(--Neo-Background) 15%, var(--zen-primary-color) 60%) !important;
+            }
+        }
+    }
+}

@@ -1,0 +1,603 @@
+#!/usr/bin/env -S python3 -I
+"""homu-zen-theme: Homura's Zen Browser theme as code.
+
+  capture   copy the theme from a Zen profile into this repo
+  update    check every mod's upstream source; with --write, pull newer copies into this repo
+  apply     install this repo's theme into a Zen profile (Zen must be closed); backs up first
+  status    show how the profile differs from this repo
+  install-tweaks   install the Zen Theme Tweaks mod (tweaks/) and fix moved mod sources;
+                   safe while Zen is running
+
+The repo holds: profile/ (LEPTON chrome CSS, user.js), mods/<id>/ (vendored Sine mods),
+mods.json (Sine's mod list: source, version, enabled), prefs/theme-prefs.js (theme and mod
+settings only, nothing personal).
+"""
+import argparse, configparser, difflib, fcntl, filecmp, io, json, os, re, shutil, subprocess, sys
+import tarfile, tempfile, time, urllib.error, urllib.request
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent
+ZEN_ROOTS = [Path.home() / ".var/app/app.zen_browser.zen/.zen", Path.home() / ".zen",
+             Path.home() / ".config/zen"]
+# Files LEPTON put in chrome/ (the rest of chrome/ is the Sine engine, JS/ and utils/,
+# which Sine's own installer manages).
+CHROME_FILES = ["userChrome.css", "userContent.css", "LEPTON", "CREDITS", "LICENSE", "icons"]
+SKIP_NAMES = {".git", "node_modules", "__pycache__", ".DS_Store"}
+# The repo's own mod (fixes for clashes between mods). Its source is tweaks/, not mods/.
+TWEAKS_ID = "homu-zen-theme"
+# Earlier ids of the tweaks mod. install-tweaks removes them from a profile so the
+# renamed mod doesn't load twice, keeping their enabled flag.
+OLD_TWEAKS_IDS = ("zen-theme",)
+# Mod sources that moved; Sine checks the homepage for updates.
+MOVED_OWNERS = {"01-1": "homura-ai"}
+# Mods installed from a homura-ai fork that carries fixes upstream doesn't have yet.
+SOURCE_OVERRIDES = {"Neo-Zen": "https://github.com/homura-ai/Neo-Zen"}
+
+# Prefs captured besides the ones mods declare in preferences.json.
+PREF_ALLOW = re.compile(r"^(sine\.(allow-unsafe-js|auto-updates|engine\.auto-update|is-cosine|fork-id|mods\.disable-all)"
+                        r"|zen\.(theme|view|tabs|essentials|watermark|urlbar\.behavior|glance|splitView|widget|compact-mode)\..*"
+                        r"|zen\.watermark\.enabled|zen\.workspaces\.(separate-essentials|show-workspace-indicator|indicator-position|hide-default-container-indicator|natural-scroll)"
+                        r"|browser\.uiCustomization\.state|browser\.tabs\.allow_transparent_browser"
+                        r"|toolkit\.legacyUserProfileCustomizations\.stylesheets|layout\.css\.backdrop-filter\.enabled"
+                        r"|svg\.context-properties\.content\.enabled|widget\.transparent-windows|browser\.compactmode\.show"
+                        r")$")
+# Never captured: ids, timestamps, migration and update bookkeeping.
+PREF_DENY = re.compile(r"(last-update|last-build|last-version|migrat|milestone|\.active$|initialized|"
+                       r"suggestions-learner|pending-restart|session|\.seen$|-version$)")
+
+
+def die(msg):
+    print(f"homu-zen-theme: {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def default_profile():
+    for root in ZEN_ROOTS:
+        ini = root / "installs.ini"
+        if ini.exists():
+            cp = configparser.ConfigParser(strict=False)
+            cp.optionxform = str
+            cp.read(ini)
+            for sec in cp.sections():
+                if cp.has_option(sec, "Default"):
+                    p = root / cp.get(sec, "Default")
+                    if p.is_dir():
+                        return p
+    die("no Zen profile found; pass --profile")
+
+
+# Mods whose authors published no license live in the private homura-ai/homu-zen-theme-private
+# repo, checked out as the mods-private/ submodule, so the public repo doesn't republish them.
+PRIVATE_MODS = REPO / "mods-private"
+
+
+LICENSE_NAME = re.compile(r"(?i)(un)?(licen[cs]e|copying)([-_.][\w.-]*)?$")
+
+
+def license_files(d: Path) -> list:
+    """Non-empty license files at the top of a mod folder."""
+    if not d.is_dir():
+        return []
+    return [f for f in d.iterdir() if LICENSE_NAME.match(f.name) and f.is_file() and f.stat().st_size > 0]
+
+
+def has_license(d: Path) -> bool:
+    return bool(license_files(d))
+
+
+def copy_mod(src: Path, dst: Path):
+    """copy_tree, but keep license files the repo added to dst that src lacks: Sine installs
+    some MIT mods without their license file, and a capture or update must not drop it."""
+    keep = {f.name: f.read_bytes() for f in license_files(dst) if not (src / f.name).exists()}
+    copy_tree(src, dst)
+    for name, data in keep.items():
+        (dst / name).write_bytes(data)
+
+
+def mod_dir(mid: str) -> Path:
+    """Where the repo keeps a mod: mods-private/<id> if it is there, else mods/<id>."""
+    p = PRIVATE_MODS / mid
+    return p if p.is_dir() else REPO / "mods" / mid
+
+
+def copy_tree(src: Path, dst: Path):
+    if dst.exists():
+        shutil.rmtree(dst)
+    shutil.copytree(src, dst, ignore=lambda d, names: [n for n in names if n in SKIP_NAMES], symlinks=True)
+
+
+def copy_any(src: Path, dst: Path):
+    if src.is_dir():
+        copy_tree(src, dst)
+    else:
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+
+
+def trees_equal(a: Path, b: Path) -> bool:
+    if a.is_file() or b.is_file():
+        return a.is_file() and b.is_file() and filecmp.cmp(a, b, shallow=False)
+    if not (a.is_dir() and b.is_dir()):
+        return False
+    c = filecmp.dircmp(a, b, ignore=list(SKIP_NAMES))
+    if c.left_only or c.right_only or c.funny_files:
+        return False
+    if any(not filecmp.cmp(a / f, b / f, shallow=False) for f in c.common_files):
+        return False
+    return all(trees_equal(a / d, b / d) for d in c.common_dirs)
+
+
+def read_prefs(path: Path) -> dict:
+    prefs = {}
+    if path.exists():
+        for line in path.read_text(errors="replace").splitlines():
+            m = re.match(r'\s*user_pref\("([^"]+)",\s*(.*)\);\s*$', line)
+            if m:
+                prefs[m.group(1)] = m.group(2)
+    return prefs
+
+
+def declared_mod_prefs(mods_dir: Path, mods: dict) -> set:
+    names = set()
+
+    def walk(x):
+        if isinstance(x, dict):
+            if isinstance(x.get("property"), str):
+                names.add(x["property"])
+            for v in x.values():
+                walk(v)
+        elif isinstance(x, list):
+            for v in x:
+                walk(v)
+
+    for mid, m in mods.items():
+        pf = m.get("preferences")
+        if isinstance(pf, str) and pf:
+            f = mods_dir / mid / pf
+            if f.is_file():
+                try:
+                    walk(json.loads(f.read_text()))
+                except ValueError:
+                    pass
+        elif pf:
+            walk(pf)
+    return names
+
+
+def theme_prefs(profile: Path, mods: dict) -> dict:
+    declared = declared_mod_prefs(profile / "chrome/sine-mods", mods)
+    out = {}
+    for k, v in read_prefs(profile / "prefs.js").items():
+        if (k in declared or PREF_ALLOW.match(k)) and not PREF_DENY.search(k):
+            out[k] = v
+    return dict(sorted(out.items()))
+
+
+def fix_homepage(mid: str, h: str) -> str:
+    if mid in SOURCE_OVERRIDES:
+        return SOURCE_OVERRIDES[mid]
+    for old, new in MOVED_OWNERS.items():
+        h = re.sub(rf"^(https?://github\.com/)?{re.escape(old)}/", f"https://github.com/{new}/", h or "")
+    return h
+
+
+def tweaks_entry() -> dict:
+    m = json.loads((REPO / "tweaks/theme.json").read_text())
+    m.update({"enabled": True, "no-updates": True})
+    return m
+
+
+def install_tweaks(prof: Path) -> list:
+    """Install tweaks/ as a Sine mod and point moved mod sources at their new home.
+    Safe while Zen runs: Sine re-reads mods.json from disk whenever it needs it."""
+    sm = prof / "chrome/sine-mods"
+    mods_file = sm / "mods.json"
+    mods = json.loads(mods_file.read_text()) if mods_file.exists() else {}
+    notes = []
+    for old in OLD_TWEAKS_IDS:
+        if old in mods:
+            mods.setdefault(TWEAKS_ID, {"enabled": mods[old].get("enabled", True)})
+            del mods[old]
+            notes.append(f"removed old tweaks mod {old} (now {TWEAKS_ID})")
+        if (sm / old).is_dir():
+            shutil.rmtree(sm / old)
+    copy_tree(REPO / "tweaks", sm / TWEAKS_ID)
+    entry = tweaks_entry()
+    if TWEAKS_ID in mods:
+        entry["enabled"] = mods[TWEAKS_ID].get("enabled", True)
+    else:
+        notes.append(f"installed {TWEAKS_ID}")
+    mods[TWEAKS_ID] = {**mods.get(TWEAKS_ID, {}), **entry}
+    for mid, m in mods.items():
+        new = fix_homepage(mid, m.get("homepage", ""))
+        if new != m.get("homepage", ""):
+            notes.append(f"{mid}: homepage {m.get('homepage')} -> {new}")
+            m["homepage"] = new
+    tmp = mods_file.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(mods, indent=2, ensure_ascii=False))
+    os.replace(tmp, mods_file)
+    return notes
+
+
+def zen_running(profile: Path) -> bool:
+    lock = profile / "lock"
+    if lock.is_symlink() or lock.exists():
+        try:
+            target = os.readlink(lock)
+            pid = int(target.rsplit("+", 1)[-1])
+            os.kill(pid, 0)
+            return True
+        except (OSError, ValueError):
+            pass
+    r = subprocess.run(["pgrep", "-f", f"-profile {profile}"], capture_output=True)
+    return r.returncode == 0
+
+
+def lock_profile(profile: Path):
+    """Take the fcntl lock on .parentlock that Zen takes while it runs, so Zen can't start
+    mid-apply (it reports the profile as in use instead). Returns the open file, which holds
+    the lock until it is closed or this process exits, or None if Zen holds the lock."""
+    f = open(profile / ".parentlock", "a")
+    try:
+        fcntl.lockf(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return f
+    except OSError:
+        f.close()
+        return None
+
+
+# ---------------------------------------------------------------- capture
+def cmd_capture(args):
+    prof = args.profile
+    chrome, sm = prof / "chrome", prof / "chrome/sine-mods"
+    mods = json.loads((sm / "mods.json").read_text())
+    # Shown at the end, so a capture from a profile that hasn't had the repo's updates
+    # applied yet (which would revert them) is visible before anything is committed.
+    before = json.loads((REPO / "mods.json").read_text()) if (REPO / "mods.json").exists() else {}
+    for name in CHROME_FILES:
+        if (chrome / name).exists():
+            copy_any(chrome / name, REPO / "profile/chrome" / name)
+    if (prof / "user.js").exists():
+        copy_any(prof / "user.js", REPO / "profile/user.js")
+    (REPO / "mods").mkdir(exist_ok=True)
+    for old in OLD_TWEAKS_IDS:
+        mods.pop(old, None)
+    for mid in mods:
+        if mid == TWEAKS_ID:
+            continue
+        if (sm / mid).is_dir():
+            dest = mod_dir(mid)
+            # A new mod with no license file goes to the private submodule, if it is checked out.
+            if not dest.exists() and not has_license(sm / mid):
+                if not (PRIVATE_MODS / ".git").exists():
+                    print(f"warning: {mid} has no license file and mods-private/ is not checked out "
+                          "(git submodule update --init); not captured")
+                    continue
+                dest = PRIVATE_MODS / mid
+                print(f"{mid}: no license file, kept in mods-private/ (commit it in that submodule)")
+            copy_mod(sm / mid, dest)
+        else:
+            print(f"warning: {mid} is in mods.json but has no folder")
+    for d in [*(REPO / "mods").iterdir(), *(PRIVATE_MODS.iterdir() if PRIVATE_MODS.is_dir() else [])]:
+        if not d.is_dir() or d.name.startswith("."):
+            continue
+        if d.name not in mods or d.name == TWEAKS_ID:
+            shutil.rmtree(d)
+            print(f"removed {d.name} (no longer installed)")
+    for mid, m in mods.items():
+        m["homepage"] = fix_homepage(mid, m.get("homepage", ""))
+    mods[TWEAKS_ID] = {**mods.get(TWEAKS_ID, {}), **tweaks_entry(),
+                       "enabled": mods.get(TWEAKS_ID, {}).get("enabled", True)}
+    (REPO / "mods.json").write_text(json.dumps(mods, indent=2, ensure_ascii=False) + "\n")
+    for mid in sorted(set(before) | set(mods)):
+        a, b = before.get(mid, {}).get("version"), mods.get(mid, {}).get("version")
+        if a != b:
+            print(f"{mid}: {a} -> {b}" + ("" if mid in mods else " (removed)"))
+    prefs = theme_prefs(prof, mods)
+    lines = ["// Theme and mod settings captured by `homu-zen-theme capture`. `homu-zen-theme apply` writes",
+             "// these into prefs.js (not user.js, so changes made in Zen's settings still stick).", ""]
+    lines += [f'user_pref("{k}", {v});' for k, v in prefs.items()]
+    (REPO / "prefs").mkdir(exist_ok=True)
+    (REPO / "prefs/theme-prefs.js").write_text("\n".join(lines) + "\n")
+    on = sum(1 for m in mods.values() if m.get("enabled"))
+    print(f"captured {len(mods)} mods ({on} enabled), {len(prefs)} prefs from {prof}")
+
+
+# ---------------------------------------------------------------- update
+def parse_source(homepage: str):
+    """Return (owner, repo, ref or None, subpath) for a GitHub homepage, else None."""
+    h = (homepage or "").strip()
+    if re.fullmatch(r"[\w.-]+/[\w.-]+", h):
+        h = "https://github.com/" + h
+    m = re.match(r"https?://github\.com/([\w.-]+)/([\w.-]+?)(?:\.git)?(?:/tree/([^/]+)(?:/(.*))?)?/?$", h)
+    if not m:
+        return None
+    return m.group(1), m.group(2), m.group(3), (m.group(4) or "").strip("/")
+
+
+def http_get(url: str, tries=4) -> bytes:
+    last = None
+    for i in range(tries):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "homu-zen-theme"})
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return r.read()
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
+            last = e
+            if isinstance(e, urllib.error.HTTPError) and e.code == 404:
+                break
+            time.sleep(2 * (i + 1))
+    raise RuntimeError(f"{url}: {last}")
+
+
+def fetch_upstream(owner, repo, ref, subpath, dest: Path) -> Path:
+    data = http_get(f"https://codeload.github.com/{owner}/{repo}/tar.gz/{ref or 'HEAD'}")
+    with tarfile.open(fileobj=io.BytesIO(data)) as tf:
+        tf.extractall(dest, filter="data")
+    top = next(dest.iterdir())
+    src = top / subpath if subpath else top
+    if not src.is_dir():
+        raise RuntimeError(f"{subpath!r} not found in {owner}/{repo}")
+    return src, top
+
+
+def version_of(d: Path):
+    try:
+        return json.loads((d / "theme.json").read_text()).get("version")
+    except (OSError, ValueError):
+        return None
+
+
+def theme_json(d: Path) -> dict:
+    try:
+        return json.loads((d / "theme.json").read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def layout(d: Path):
+    """The theme.json fields Sine uses to decide which files to load."""
+    t = theme_json(d)
+    return {k: t.get(k) for k in ("style", "preferences", "scripts", "modules")}
+
+
+def changed_files(a: Path, b: Path):
+    def files(root):
+        return {str(p.relative_to(root)) for p in root.rglob("*")
+                if p.is_file() and not (set(p.relative_to(root).parts) & SKIP_NAMES)}
+    fa, fb = files(a), files(b)
+    diff = sorted(f for f in fa & fb if not filecmp.cmp(a / f, b / f, shallow=False))
+    return diff, sorted(fb - fa), sorted(fa - fb)
+
+
+def cmd_update(args):
+    mods = json.loads((REPO / "mods.json").read_text())
+    wanted = set(args.mods or mods)
+    report, changed = [], False
+    for mid, m in mods.items():
+        if mid not in wanted or mid == TWEAKS_ID:
+            continue
+        src = parse_source(m.get("homepage", ""))
+        vend = mod_dir(mid)
+        if not vend.is_dir():
+            report.append((mid, "no copy here (git submodule update --init)", ""))
+            continue
+        if not src:
+            report.append((mid, "no GitHub source", m.get("homepage")))
+            continue
+        owner, repo, ref, sub = src
+        with tempfile.TemporaryDirectory() as tmp:
+            try:
+                up, top = fetch_upstream(owner, repo, ref, sub, Path(tmp))
+            except Exception as e:  # network or layout problem: report, keep going
+                report.append((mid, "fetch failed", str(e)[:120]))
+                continue
+            diff, added, gone = changed_files(vend, up)
+            if sub and gone:
+                # Some marketplace installs keep the whole source repo, not just the mod folder.
+                alt = changed_files(vend, top)
+                if len(alt[2]) < len(gone):
+                    up, (diff, added, gone) = top, alt
+            if not (diff or added or gone):
+                report.append((mid, "up to date", version_of(vend)))
+                continue
+            # Marketplace installs can be laid out differently from the source repo
+            # (e.g. a mod folder nested one level deeper). Don't overwrite those blindly.
+            if gone and len(gone) > max(3, len(diff) + len(added)):
+                report.append((mid, "layout differs, check by hand",
+                               f"{len(gone)} vendored files not upstream, e.g. {gone[:3]}"))
+                continue
+            note = f"{version_of(vend)} -> {version_of(up)}; {len(diff)} changed, {len(added)} new, {len(gone)} removed"
+            if not args.write:
+                report.append((mid, "update available", note))
+                continue
+            # Sine rewrites style/preferences/scripts paths when it installs a mod, so a plain
+            # file copy is only equivalent when upstream kept the same layout. Otherwise let
+            # Sine do it: update the mod in Zen (Settings > Sine), then `homu-zen-theme capture`.
+            if layout(vend) != layout(up):
+                report.append((mid, "layout changed: use Sine", note))
+                continue
+            copy_mod(up, vend)
+            fresh = theme_json(vend)
+            for key in ("version", "name", "description"):
+                if key in fresh:
+                    m[key] = fresh[key]
+            m["updatedAt"] = fresh.get("updatedAt") or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            changed = True
+            report.append((mid, "UPDATED", note))
+    if changed:
+        (REPO / "mods.json").write_text(json.dumps(mods, indent=2, ensure_ascii=False) + "\n")
+    w = max(len(r[0]) for r in report) if report else 0
+    for mid, state, detail in report:
+        print(f"{mid:<{w}}  {state:<26} {detail or ''}")
+
+
+# ---------------------------------------------------------------- apply
+def cmd_apply(args):
+    prof = args.profile
+    if args.wait:
+        print(f"waiting for Zen to close ({prof})", flush=True)
+    # Held until exit: Zen can't start on this profile while we write to it.
+    lock = None
+    while not lock:
+        lock = None if zen_running(prof) else lock_profile(prof)
+        if lock or args.wait:
+            time.sleep(0 if lock else 2)
+        elif args.mods_only:
+            break  # mod folders and mods.json may be synced beside a running Zen
+        else:
+            die(f"Zen is running on {prof}; close it first (or wait with --wait)")
+    if args.mods_only:
+        return apply_mods_only(prof)
+    chrome, sm = prof / "chrome", prof / "chrome/sine-mods"
+    if not (chrome / "JS/sine.sys.mjs").exists():
+        print("note: Sine isn't installed in this profile; install it (github.com/CosmoCreeper/Sine) "
+              "so the mods load. The CSS and prefs are applied anyway.")
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    backup = Path.home() / "hold" / f"homu-zen-theme-backup-{stamp}"
+    backup.mkdir(parents=True)
+    for name in CHROME_FILES + ["sine-mods"]:
+        if (chrome / name).exists():
+            copy_any(chrome / name, backup / "chrome" / name)
+    for name in ("prefs.js", "user.js"):
+        if (prof / name).exists():
+            shutil.copy2(prof / name, backup / name)
+    print(f"backed up current theme to {backup}")
+
+    for name in CHROME_FILES:
+        if (REPO / "profile/chrome" / name).exists():
+            copy_any(REPO / "profile/chrome" / name, chrome / name)
+    if (REPO / "profile/user.js").exists():
+        shutil.copy2(REPO / "profile/user.js", prof / "user.js")
+    mods = json.loads((REPO / "mods.json").read_text())
+    live_file = sm / "mods.json"
+    live = json.loads(live_file.read_text()) if live_file.exists() else {}
+    sm.mkdir(parents=True, exist_ok=True)
+    for mid in list(mods):
+        if mid != TWEAKS_ID:
+            if not mod_dir(mid).is_dir():
+                # Leave an installed copy and its entry as they are; never list a mod with no folder.
+                if mid in live and (sm / mid).is_dir():
+                    mods[mid] = live[mid]
+                    print(f"warning: no copy of {mid} here (run: git submodule update --init); kept the installed one")
+                else:
+                    del mods[mid]
+                    print(f"warning: no copy of {mid} here (run: git submodule update --init); install it in Sine from its homepage")
+                continue
+            copy_tree(mod_dir(mid), sm / mid)
+    (sm / "mods.json").write_text(json.dumps(mods, indent=2, ensure_ascii=False))
+    install_tweaks(prof)
+    # Sine rebuilds chrome.css/content.css (the @import list) on startup.
+
+    want = read_prefs(REPO / "prefs/theme-prefs.js")
+    pj = prof / "prefs.js"
+    lines = pj.read_text(errors="replace").splitlines() if pj.exists() else []
+    seen, out = set(), []
+    for line in lines:
+        m = re.match(r'\s*user_pref\("([^"]+)",', line)
+        if m and m.group(1) in want:
+            seen.add(m.group(1))
+            out.append(f'user_pref("{m.group(1)}", {want[m.group(1)]});')
+        else:
+            out.append(line)
+    out += [f'user_pref("{k}", {v});' for k, v in want.items() if k not in seen]
+    pj.write_text("\n".join(out) + "\n")
+    print(f"applied {len(mods)} mods and {len(want)} prefs to {prof}; start Zen to load them")
+
+
+def apply_mods_only(prof: Path):
+    """Sync mod folders and mods.json into a running profile, as Sine's own updater does.
+    New mod files load at the next Zen start."""
+    sm = prof / "chrome/sine-mods"
+    live = json.loads((sm / "mods.json").read_text())
+    repo = json.loads((REPO / "mods.json").read_text())
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    backup = Path.home() / "hold" / f"homu-zen-theme-backup-{stamp}" / "sine-mods"
+    changed = []
+    for mid, m in repo.items():
+        if mid == TWEAKS_ID:
+            continue
+        src, dst = mod_dir(mid), sm / mid
+        if not src.is_dir():
+            print(f"warning: no copy of {mid} here (run: git submodule update --init); left as is")
+            continue
+        if dst.exists() and trees_equal(src, dst) and live.get(mid, {}).get("version") == m.get("version"):
+            continue
+        if dst.exists():
+            copy_tree(dst, backup / mid)
+        copy_tree(src, dst)
+        # Keep the live enabled flag: Homura may have toggled a mod since the last capture.
+        live[mid] = {**m, "enabled": live.get(mid, m).get("enabled", m.get("enabled"))}
+        changed.append(mid)
+    if changed:
+        backup.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(sm / "mods.json", backup.parent / "mods.json")
+        tmp = sm / "mods.json.tmp"
+        tmp.write_text(json.dumps(live, indent=2, ensure_ascii=False))
+        os.replace(tmp, sm / "mods.json")
+    notes = install_tweaks(prof)
+    print(f"synced {len(changed)} mods: {', '.join(changed) or 'none'}" + (f"; old copies in {backup}" if changed else ""))
+    for n in notes:
+        print(n)
+
+
+# ---------------------------------------------------------------- status
+def cmd_status(args):
+    prof = args.profile
+    sm = prof / "chrome/sine-mods"
+    live = json.loads((sm / "mods.json").read_text())
+    repo = json.loads((REPO / "mods.json").read_text())
+    for mid in sorted(set(live) | set(repo)):
+        if mid not in repo:
+            print(f"+ {mid}: installed, not in repo (run capture)")
+        elif mid not in live:
+            print(f"- {mid}: in repo, not installed")
+        else:
+            notes = []
+            if bool(live[mid].get("enabled")) != bool(repo[mid].get("enabled")):
+                notes.append(f"enabled {repo[mid].get('enabled')} -> {live[mid].get('enabled')}")
+            if live[mid].get("version") != repo[mid].get("version"):
+                notes.append(f"version {repo[mid].get('version')} -> {live[mid].get('version')}")
+            src = REPO / "tweaks" if mid == TWEAKS_ID else mod_dir(mid)
+            if not src.is_dir():
+                notes.append("no copy in repo (submodule not checked out)")
+            elif not trees_equal(src, sm / mid):
+                notes.append("files differ")
+            if notes:
+                print(f"~ {mid}: " + ", ".join(notes))
+    for name in CHROME_FILES:
+        a, b = REPO / "profile/chrome" / name, prof / "chrome" / name
+        if a.exists() != b.exists() or (a.exists() and not trees_equal(a, b)):
+            print(f"~ chrome/{name} differs")
+    want = read_prefs(REPO / "prefs/theme-prefs.js")
+    have = theme_prefs(prof, live)
+    for k in sorted(set(want) | set(have)):
+        if want.get(k) != have.get(k):
+            print(f"~ pref {k}: {want.get(k)} -> {have.get(k)}")
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--profile", type=Path, help="Zen profile folder (default: the installed default)")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("capture", help="copy the theme from the profile into this repo")
+    u = sub.add_parser("update", help="check mods against their upstream sources")
+    u.add_argument("mods", nargs="*", help="mod ids (default: all)")
+    u.add_argument("--write", action="store_true",
+                   help="pull newer upstream copies into mods/ when their layout is unchanged")
+    a = sub.add_parser("apply", help="install this repo's theme into the profile (Zen closed)")
+    a.add_argument("--wait", action="store_true", help="wait for Zen to close, then apply")
+    a.add_argument("--mods-only", action="store_true",
+                   help="only sync mod folders and mods.json (safe while Zen runs; no CSS, prefs or backup of prefs)")
+    sub.add_parser("status", help="show how the profile differs from this repo")
+    sub.add_parser("install-tweaks", help="install tweaks/ and fix moved mod sources (safe while Zen runs)")
+    args = ap.parse_args()
+    if args.cmd != "update":
+        args.profile = (args.profile or default_profile()).resolve()
+    {"capture": cmd_capture, "update": cmd_update, "apply": cmd_apply, "status": cmd_status,
+     "install-tweaks": lambda a: print("\n".join(install_tweaks(a.profile)) or "already up to date"),
+     }[args.cmd](args)
+
+
+if __name__ == "__main__":
+    main()

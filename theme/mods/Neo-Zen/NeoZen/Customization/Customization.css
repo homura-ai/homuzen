@@ -1,0 +1,99 @@
+:root {
+    --Neo-Elements: light-dark(black, white);
+    --Neo-Background: light-dark(white, black);
+
+    /* Default Theme Color */
+    --default-theme-color: rgb(255, 190, 120);
+
+    /*Browser Background - Windows*/
+    --browser-bg-dark-color-windows: rgba(0, 0, 0, 0.4);
+    --browser-bg-light-color-windows: rgba(255, 255, 255, 0.0);
+
+    /*Browser Background - Linux*/
+    --browser-bg-dark-color-linux: rgba(10, 10, 10, 0.8);
+    --browser-bg-light-color-linux: rgba(205, 205, 205, 0.7);
+
+    /* Browser tab area background */
+    --browser-tab-area-bg-color: transparent;
+
+    /* General roundness */
+    --Roundness: 50px;
+    --Roundness-Small: 8px;
+
+    /* Compact mode background color */
+    
+    --Glass-Background-Light: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.05) 100%);
+    --Glass-Background-Dark: linear-gradient(135deg, rgba(20, 20, 30, 0.6) 0%, rgba(10, 10, 10, 0.5) 100%);
+
+    --Neo-Compact-Glass-Background: light-dark(var(--Glass-Background-Light), var(--Glass-Background-Dark));
+
+    --compact-bg-color: color-mix(in srgb, var(--Neo-Background) 50%, white 2%);
+    --Neo-Compact-Background: color-mix(in srgb, var(--Neo-Background) 50%, var(--Neo-Glow-Color-1) 2%, white 2%);
+    /* Blur effect */
+    --Neo-Blur-Effect: blur(20px) saturate(120%) brightness(1) contrast(105%);
+
+    --Neo-Floating-BG-Color: color-mix(in srgb, var(--Neo-Background) 50%, var(--Neo-Elements) 5%, transparent, var(--Neo-Glow-Color-1) 3%);
+
+    /* Advertisement: if you are going to change the popup color, this only affects linux platforms and the color opacity should match
+     * the alpha value you set in the compositor for the blur effect to work properly, if the opacity is lower, the compositor could
+     * not blur the popup, and the popup will be transparent, if the opacity is higher, the popup will be blurred*/
+    --Neo-Popup-BG-Color: color-mix(in srgb, var(--Neo-Background) 65%, var(--Neo-Elements) 5%, transparent);
+
+    /* Tabs color */
+
+    --Neo-Tab-Background: color-mix(in srgb, var(--Neo-Background) 30%, var(--Neo-Elements) 10%, transparent 20%);
+    --Neo-Tab-Background-Selected: color-mix(in srgb, var(--Neo-Background) 40%, var(--Neo-Elements) 15%, transparent 20%);
+    --Neo-Tab-Background-Hover: color-mix(in srgb, var(--Neo-Background) 30%, var(--Neo-Elements) 10%, transparent 20%);
+
+    --Neo-Tab-Shadow: 0 0 3px color-mix(in srgb, black, transparent);
+
+    /* Glance buttons color */
+    --Neo-Glance-Buttons-BG: color-mix(in srgb, var(--Neo-Background) 70%, white 2%);
+
+    /* Tab collapsed width */
+    --tab-collapsed-background-width: 40px !important;
+
+    /* Tab min height */
+    --tab-min-height: 40px !important;
+    
+    &[zen-sidebar-expanded]{
+        --tab-min-height: 40px !important;
+    }
+
+    /* Tab transition */
+    --tab-bg-transition-duration: 0.5s !important;
+
+    /* Footer */
+
+    --Neo-Footer-Indicator-Size-Sidebar-Collapsed: 30px;
+    --Neo-Footer-Indicator-Height-Sidebar-Expanded: 3px;
+    --Neo-Footer-Indicator-Width-Sidebar-Expanded: 80%;
+
+    /* Workspace strip */
+    --Neo-Workspace-Strip-Height-Sidebar-Expanded: 35px;
+    --Neo-Workspace-Strip-Subview-Button-Height-Sidebar-Collapsed: 28px;
+    --Neo-Workspace-Strip-Subview-Button-Separation-Sidebar-Collapsed: 2px;
+
+    /* Toolbar */
+
+    --Neo-Toolbar-height: 50px;
+
+    /* Media */
+    --Neo-Media-Height-Sidebar-Collapsed-Hidden: 35px;
+    
+    /* Black colors*/
+    --Neo-Black-1: color-mix(in srgb, var(--Neo-Background) 30%, transparent);
+    --Neo-Black-2: color-mix(in srgb, var(--Neo-Background) 50%, transparent);
+    --Neo-Black-3: color-mix(in srgb, var(--Neo-Background) 70%, transparent);
+
+    /* Glow Colors */
+    --Neo-Glow-Color-1: color-mix(in srgb, var(--zen-primary-color) 95%, var(--Neo-Elements) 5%);
+    --Neo-Glow-Color-2: color-mix(in srgb, var(--zen-primary-color) 90%, var(--Neo-Elements) 10%);
+    --Neo-Glow-Color-3: color-mix(in srgb, var(--zen-primary-color) 85%, var(--Neo-Elements) 15%);
+    --Neo-Glow-Color-4: color-mix(in srgb, var(--zen-primary-color) 80%, var(--Neo-Elements) 20%);
+    --Neo-Glow-Color-5: color-mix(in srgb, var(--zen-primary-color) 50%, var(--Neo-Elements) 10%);
+    
+    
+    --Neo-Background-T1: color-mix(in srgb, var(--Neo-Background) 55%, var(--Neo-Elements) 3%, var(--zen-primary-color) 3%);
+    --Neo-Background-T2: color-mix(in srgb, var(--Neo-Background) 40%, var(--Neo-Elements) 3%, var(--zen-primary-color) 3%);
+}

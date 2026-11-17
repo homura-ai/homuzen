@@ -1,0 +1,170 @@
+@media not -moz-pref("neo.theme.disabled") {
+    @media not -moz-pref("neo.theme.workspace-indicator.disabled") {
+        .zen-current-workspace-indicator {
+            --tab-hover-background-color: transparent !important;
+        }
+
+        zen-workspace {
+            & .zen-current-workspace-indicator {
+                justify-content: center;
+                padding: 10px !important;
+
+                transition: box-shadow 0.3s ease !important;
+
+                & .zen-current-workspace-indicator-stack {
+                    visibility: visible !important;
+                    display: flex !important;
+                    position: relative !important;
+                    margin: unset !important;
+                    left: 0 !important;
+                    min-width: 16px !important;
+
+                    & .zen-current-workspace-indicator-chevron {
+                        transition: opacity 0.4s ease, transform 0.3s ease !important;
+                    }
+                }
+
+                & .zen-current-workspace-indicator-stack>* {
+                    flex: 1 1 auto;
+                }
+
+                & .zen-current-workspace-indicator-name {
+                    text-align: center !important;
+                    justify-content: center !important;
+                    margin: auto !important;
+
+                    color: var(--Neo-Elements) !important;
+
+                    opacity: 1 !important;
+
+                    font-weight: 500 !important;
+                    font-size: 14px !important;
+                }
+
+                & .zen-workspaces-actions {
+                    display: none !important;
+                }
+            }
+        }
+
+        :root {
+            &[zen-sidebar-expanded="true"] {
+                zen-workspace {
+                    & .zen-current-workspace-indicator {
+
+                        filter: drop-shadow(0px 0px 15px var(--Neo-Glow-Color-3)) brightness(1.0) !important;
+                        --workspace-aux-height: 60px;
+                        min-height: var(--workspace-aux-height) !important;
+                        max-height: var(--workspace-aux-height) !important;
+
+                        & .zen-current-workspace-indicator-name {
+                            display: flex !important;
+                            position: relative !important;
+                            margin-right: 24px !important;
+                        }
+
+                        & .zen-current-workspace-indicator-icon:not(#PanelUI-zen-emojis-picker-list) {
+                            display: flex !important;
+                            position: absolute !important;
+                            opacity: 0 !important;
+                        }
+
+                        & .zen-current-workspace-indicator-stack {
+                            & .zen-current-workspace-indicator-chevron {
+                                opacity: 0 !important;
+                                display: flex !important;
+                            }
+                        }
+
+                        &:hover {
+                            & .zen-current-workspace-indicator-stack {
+                                & .zen-current-workspace-indicator-chevron {
+                                    opacity: 1 !important;
+                                }
+                            }
+                        }
+
+                        &::before {
+                            background: var(--Neo-Glow-Color-3) !important;
+                            box-shadow: 0px 0px 8px var(--Neo-Glow-Color-3) !important;
+                            filter: drop-shadow(0px 0px 10px var(--Neo-Glow-Color-3)) brightness(1.0) !important;
+
+                            position: absolute !important;
+                            border-radius: 20px !important;
+                            align-self: center !important;
+
+                            left: auto !important;
+                            right: auto !important;
+                            height: 3px !important;
+                            top: auto !important;
+                            bottom: 24% !important;
+                            width: 0% !important;
+                        }
+                    }
+                }
+
+                &:not([animating-background="true"]) zen-workspace {
+                    &[active] {
+                        & .zen-current-workspace-indicator {
+                            &::before {
+                                width: 45% !important;
+                                transition: width 0.6s ease, opacity 0.5s ease !important;
+                            }
+
+                            &:hover {
+                                &::before {
+                                    width: 80% !important;
+                                    transition: width 0.3s ease !important;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            &:not([zen-sidebar-expanded="true"]) {
+
+                & zen-workspace {
+                    &[active="true"] {
+                        & .zen-current-workspace-indicator {
+                            filter: drop-shadow(0px 0px 3px var(--Neo-Glow-Color-3)) brightness(1.0) !important;
+
+                            &:hover {
+                                box-shadow: 0px 0px 12px color-mix(in srgb, var(--Neo-Glow-Color-3) 100%, transparent) !important;
+                            }
+                        }
+                    }
+                }
+
+                .zen-current-workspace-indicator {
+
+                    opacity: 1 !important;
+                    max-height: var(--tab-collapsed-background-width) !important;
+                    max-width: var(--tab-collapsed-background-width) !important;
+                    align-self: center !important;
+
+                    border: 4px solid var(--Neo-Glow-Color-3) !important;
+                    border-radius: var(--tab-collapsed-background-width) !important;
+
+                    box-shadow: 0px 0px 0px color-mix(in srgb, var(--Neo-Glow-Color-3) 0%, transparent) !important;
+
+                    margin-top: 5px !important;
+                    margin-bottom: 5px !important;
+
+                    &::before {
+                        display: none !important;
+                    }
+
+                    .zen-current-workspace-indicator-stack {
+                        opacity: 1 !important;
+
+                        .zen-current-workspace-indicator-icon {
+                            display: flex !important;
+                            opacity: 1 !important;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

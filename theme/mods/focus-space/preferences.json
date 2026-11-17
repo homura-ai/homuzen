@@ -1,0 +1,175 @@
+[
+  {
+    "type": "text",
+    "label": "Focus Space adds a live per-space stopwatch in the workspace indicator and a daily time-ratio bar at the sidebar foot."
+  },
+  {
+    "type": "separator",
+    "label": "Pause shortcut",
+    "margin": "25px 0 15px 0"
+  },
+  {
+    "type": "text",
+    "label": "Pause or resume the stopwatch with a keypress — a function key like F9, or a letter plus a modifier like Ctrl, Alt, or Cmd (e.g. Alt+Shift+P). Leave blank to disable."
+  },
+  {
+    "type": "string",
+    "property": "extensions.focus-space.pause-shortcut",
+    "label": "Pause / resume stopwatch",
+    "placeholder": "F9",
+    "defaultValue": "F9"
+  },
+  {
+    "type": "separator",
+    "label": "Stopwatch",
+    "margin": "25px 0 15px 0"
+  },
+  {
+    "type": "dropdown",
+    "property": "extensions.focus-space.stopwatch-mode",
+    "label": "The stopwatch shows",
+    "placeholder": false,
+    "defaultValue": "session",
+    "options": [
+      { "label": "The current session (resets when you switch space)", "value": "session" },
+      { "label": "This space's total for today", "value": "day" }
+    ]
+  },
+  {
+    "type": "checkbox",
+    "property": "extensions.focus-space.show-separator",
+    "label": "Show a “|” between the space name and the timer",
+    "defaultValue": true
+  },
+  {
+    "type": "text",
+    "label": "Where the timer sits. “Beside the name” pins the space name to its own width so the timer follows it directly. “End of the row” leaves the name's alignment to Zen or your theme (e.g. centred) and floats the timer to the right, next to the pause button."
+  },
+  {
+    "type": "dropdown",
+    "property": "extensions.focus-space.timer-placement",
+    "label": "Timer placement",
+    "placeholder": false,
+    "defaultValue": "beside",
+    "options": [
+      { "label": "Beside the space name (default)", "value": "beside" },
+      { "label": "End of the row", "value": "end" }
+    ]
+  },
+  {
+    "type": "checkbox",
+    "property": "extensions.focus-space.pause-on-blur",
+    "label": "Pause while the window is inactive, and resume when it's back",
+    "defaultValue": true
+  },
+  {
+    "type": "separator",
+    "label": "Time-ratio bar",
+    "margin": "25px 0 15px 0"
+  },
+  {
+    "type": "checkbox",
+    "property": "extensions.focus-space.show-ratio-bar",
+    "label": "Show the daily time-ratio bar at the sidebar foot",
+    "defaultValue": true
+  },
+  {
+    "type": "separator",
+    "label": "Sessions",
+    "margin": "25px 0 15px 0"
+  },
+  {
+    "type": "text",
+    "label": "Where the “Sessions” button in the breakdown flyout opens the editor: a full page in a tab, or a small panel over the sidebar."
+  },
+  {
+    "type": "dropdown",
+    "property": "extensions.focus-space.sessions-view",
+    "label": "Open sessions in",
+    "placeholder": false,
+    "defaultValue": "page",
+    "options": [
+      { "label": "A tab (default)", "value": "page" },
+      { "label": "A panel over the sidebar", "value": "panel" }
+    ]
+  },
+  {
+    "type": "separator",
+    "label": "Page log",
+    "margin": "25px 0 15px 0"
+  },
+  {
+    "type": "text",
+    "label": "Optionally record which page you're on — the active tab's URL and name — as visits nested inside each session. Browse them under “Pages” on the sessions page, grouped by visit, by stay, or by URL. Kept for 90 days in your profile folder and never sent anywhere."
+  },
+  {
+    "type": "checkbox",
+    "property": "extensions.focus-space.log-pages",
+    "label": "Log the pages you visit (URL and tab title)",
+    "defaultValue": false
+  },
+  {
+    "type": "separator",
+    "label": "Daily reset",
+    "margin": "25px 0 15px 0"
+  },
+  {
+    "type": "text",
+    "label": "When a new day begins. Time logged before this hour counts toward the previous day, so late-night sessions stay together."
+  },
+  {
+    "type": "dropdown",
+    "property": "extensions.focus-space.day-start-hour",
+    "label": "Start a new day at",
+    "placeholder": false,
+    "defaultValue": "4",
+    "options": [
+      { "label": "12:00 AM (midnight)", "value": "0" },
+      { "label": "1:00 AM", "value": "1" },
+      { "label": "2:00 AM", "value": "2" },
+      { "label": "3:00 AM", "value": "3" },
+      { "label": "4:00 AM (default)", "value": "4" },
+      { "label": "5:00 AM", "value": "5" },
+      { "label": "6:00 AM", "value": "6" },
+      { "label": "7:00 AM", "value": "7" },
+      { "label": "8:00 AM", "value": "8" },
+      { "label": "9:00 AM", "value": "9" },
+      { "label": "10:00 AM", "value": "10" },
+      { "label": "11:00 AM", "value": "11" },
+      { "label": "12:00 PM (noon)", "value": "12" },
+      { "label": "1:00 PM", "value": "13" },
+      { "label": "2:00 PM", "value": "14" },
+      { "label": "3:00 PM", "value": "15" },
+      { "label": "4:00 PM", "value": "16" },
+      { "label": "5:00 PM", "value": "17" },
+      { "label": "6:00 PM", "value": "18" },
+      { "label": "7:00 PM", "value": "19" },
+      { "label": "8:00 PM", "value": "20" },
+      { "label": "9:00 PM", "value": "21" },
+      { "label": "10:00 PM", "value": "22" },
+      { "label": "11:00 PM", "value": "23" }
+    ]
+  },
+  {
+    "type": "separator",
+    "label": "Week view",
+    "margin": "25px 0 15px 0"
+  },
+  {
+    "type": "text",
+    "label": "Which day 'This Week' starts on. Auto follows your system region."
+  },
+  {
+    "type": "dropdown",
+    "property": "extensions.focus-space.week-start",
+    "label": "Week starts on",
+    "placeholder": false,
+    "defaultValue": "auto",
+    "options": [
+      { "label": "Auto (system region)", "value": "auto" },
+      { "label": "Monday", "value": "1" },
+      { "label": "Sunday", "value": "0" },
+      { "label": "Saturday", "value": "6" }
+    ]
+  }
+]

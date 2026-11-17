@@ -1,0 +1,23 @@
+[
+  {
+    "property": "mod.more-essentials.mode",
+    "label": "Essentials cap",
+    "type": "dropdown",
+    "defaultValue": "infinite",
+    "placeholder": false,
+    "options": [
+      { "label": "Infinite", "value": "infinite" },
+      { "label": "Custom", "value": "custom" }
+    ]
+  },
+  {
+    "property": "mod.more-essentials.cap",
+    "label": "Custom cap (whole number, 0 or greater; invalid values use Zen's cap)",
+    "type": "string",
+    "defaultValue": "12",
+    "placeholder": "e.g. 24",
+    "conditions": [
+      { "if": { "property": "mod.more-essentials.mode", "value": "custom" } }
+    ]
+  }
+]

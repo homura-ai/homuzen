@@ -1,0 +1,14 @@
+/* Homu Zen Theme Tweaks: fixes for clashes between the mods in this theme. */
+
+/* Startup background wipe (fixed unless "Show startup background wipe" is ticked).
+ * Neo Zen's Color Fixer forces `transition: background 2s, opacity 2s` onto Zen's window
+ * background layer (.zen-browser-generic-background::after). At startup the background
+ * changes from the plain colour to the workspace gradient, and that 2s transition plays it
+ * as a slow diagonal wipe. Zen's own value for this layer is `transition: 0s`. While Zen is
+ * still starting up (`zen-before-loaded`), put Zen's value back, so the gradient appears at
+ * once. Workspace switches after startup keep Neo Zen's smooth transition. */
+@media not -moz-pref("homu-zen-theme.startup-wipe.enabled") {
+  :root:root[zen-before-loaded="true"] .zen-browser-generic-background::after {
+    transition: 0s !important;
+  }
+}
