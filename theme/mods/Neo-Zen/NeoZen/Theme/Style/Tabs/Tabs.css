@@ -1,0 +1,93 @@
+@media not (-moz-pref("neo.theme.disabled")) {
+    @media not (-moz-pref("neo.theme.tabs.disabled")) {
+
+        .tabbrowser-tab {
+            --tab-color: var(--Neo-Glow-Color-3) !important;
+            --tab-hover-color: var(--Neo-Glow-Color-1) !important;
+
+            @media not (-moz-pref("zen.workspaces.hide-default-container-indicator")) {
+                @media not (-moz-pref("neo.theme.tabs-containers.disabled")) {
+                    &[usercontextid] {
+                        --tab-color: color-mix(in srgb, var(--identity-tab-color) 40%, white) !important;
+                        --tab-hover-color: color-mix(in srgb, var(--identity-tab-color) 60%, white) !important;
+                    }
+                }
+            }
+
+            --tab-background: var(--Neo-Background-T2) !important;
+            --tab-hover-background: var(--Neo-Background-T1) !important;
+
+
+            &[zen-essential] {
+
+                .tab-background {
+                    background: var(--tab-background) !important;
+                    box-shadow: inset 0px 0px 12px var(--Neo-Glow-Color-5) !important;
+                }
+
+                &:hover .tab-background {
+                    background: color-mix(in srgb, var(--Neo-Background) 60%, transparent 50%) !important;
+                    box-shadow: inset 0px 0px 25px var(--Neo-Glow-Color-4) !important;
+                }
+
+                &:not([visuallyselected]) .tab-background {
+                    border: 2px solid var(--tab-color) !important;
+                }
+
+                &[visuallyselected] .tab-background {
+
+                    box-shadow: 0px 0px 6px color-mix(in srgb, white 20%, transparent) !important;
+                    border: 0px solid transparent !important;
+
+                    &::before {
+                        border-radius: var(--Roundness) !important;
+                        background-color: var(--tab-background) !important;
+
+                        box-shadow: 0px 0px 10px color-mix(in srgb, white 30%, transparent) !important;
+                        transition: background 0.5s ease, box-shadow 0.5s ease, border 0.5s ease;
+                    }
+                }
+
+                &[multiselected="true"] .tab-background {
+                    box-shadow: inset 0px 0px 25px var(--Neo-Glow-Color-4) !important;
+                }
+            }
+
+            &:not([zen-essential]) {
+                .tab-background {
+                    border: 2px solid color-mix(in srgb, var(--zen-primary-color) 0%, transparent) !important;
+                }
+
+                &[zen-glance-tab="true"] .tab-content {
+                    justify-content: center !important;
+                    padding: 0px 0px !important;
+                }
+
+                &:not([zen-glance-tab="true"]) .tab-content {
+                    padding: 0 12px !important;
+                }
+            }
+
+            .tab-background {
+                border-radius: var(--Roundness) !important;
+                position: relative !important;
+
+                transition: background 0.7s ease, box-shadow 0.5s ease, border-color 0.7s ease !important;
+            }
+
+            &:not([zen-essential])[selected] .tab-background,
+            &:not([zen-essential])[multiselected="true"] .tab-background,
+            &:not([zen-essential]) .tab-background[selected=""] {
+                background: var(--tab-background) !important;
+                box-shadow: 0px 0px 4px var(--tab-color) !important;
+                border: 2px solid var(--tab-color) !important;
+            }
+
+            &:not([zen-essential]):hover .tab-background {
+                background: var(--tab-hover-background) !important;
+                box-shadow: 0px 0px 4px var(--tab-hover-color) !important;
+                border: 2px solid var(--tab-hover-color) !important;
+            }
+        }
+    }
+}

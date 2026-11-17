@@ -1,0 +1,1625 @@
+// ==UserScript==
+// @name           Zenslop
+// @version        0.1.0
+// @description    Hooks into Zen's sidebar to render active video streams.
+// ==/UserScript==
+
+(function () {
+  if (window.__zenslopLoaded) return;
+  window.__zenslopLoaded = true;
+
+  const LOG_PREFIX = "[Zenslop]";
+  const CAPTIONS_PREF = "mod.zenslop.captions";
+  const RENDERER_PREF = "mod.zenslop.renderer";
+  const CAPTIONS_WHEN_PIP_HIDDEN_PREF =
+    "mod.zenslop.captionsWhenPipHidden";
+  const CAPTION_MODES = new Set(["off", "on", "youtube"]);
+  const log = (...a) => console.log(LOG_PREFIX, ...a);
+  const warn = (...a) => console.warn(LOG_PREFIX, ...a);
+  const err = (...a) => console.error(LOG_PREFIX, ...a);
+  const safe = (fn) => {
+    try {
+      return fn();
+    } catch (_) {
+      return undefined;
+    }
+  };
+
+  const CONFIG = Object.freeze({
+    GAP: 6,
+    TAB_LIST_GAP: 6,
+    ANIM_MS: 220,
+    LAYOUT_ANIM_MS: 180,
+    CAPTION_ANIM_MS: 180,
+    CAPTION_GAP_GRACE_MS: 1000,
+    ANIM_TAIL_MS: 350,
+    ELEVATED_HOLD_MS: 180,
+    // A downward move of the player's top edge larger than this (px) is only
+    // committed after the lower edge holds stable for DOWN_HOLD_MS. YouTube's
+    // controls make the measured edge oscillate for a few seconds after a
+    // fast-forward into buffered content while hovered; this asymmetric hold
+    // lets the PiP rise instantly but resists transient drops.
+    TOP_SPIKE_MAX: 32,
+    DOWN_HOLD_MS: 400,
+    MAX_HEIGHT: 600,
+    DEFAULT_ASPECT: 16 / 9,
+    PIP_OPEN_DEBOUNCE_MS: 1500,
+    PIP_OBSERVE_TIMEOUT_MS: 3000,
+  });
+  const LAYOUT_TRANSITION =
+    `top ${CONFIG.LAYOUT_ANIM_MS}ms ease-out, ` +
+    `left ${CONFIG.LAYOUT_ANIM_MS}ms ease-out, ` +
+    `width ${CONFIG.LAYOUT_ANIM_MS}ms ease-out, ` +
+    `height ${CONFIG.LAYOUT_ANIM_MS}ms ease-out`;
+  const ANIM_TRANSITION =
+    `opacity ${CONFIG.ANIM_MS}ms ease, ` +
+    `transform ${CONFIG.ANIM_MS}ms ease, ${LAYOUT_TRANSITION}`;
+
+  const MUSIC_PLAYER_SELECTORS = [
+    "#zen-media-controls-toolbar", ".zen-sidebar-bottom-buttons",
+  ];
+  // These are ordered fallbacks, not a comma-separated selector. querySelector
+  // returns document order: the outer #tabbrowser-tabs wins over its children
+  // and resizing it moves the controls that our next measurement depends on.
+  // Never resize that outer strip (or Library's copies of workspace tabs).
+  const TAB_LIST_SELECTORS = [
+    "#zen-tabs-wrapper", "#tabbrowser-arrowscrollbox",
+  ];
+  const PIP_BUTTON_SELECTORS = [
+    '[id*="pictureinpicture" i]',
+    '[class*="pictureinpicture" i]',
+    '[command*="pictureinpicture" i]',
+    '[id*="pip" i]',
+    '[class*="pip" i]',
+    '[anonid*="pictureinpicture" i]',
+  ].join(",");
+
+  const musicPlayerUI = MUSIC_PLAYER_SELECTORS
+    .map(selector => document.querySelector(selector)).find(Boolean);
+  if (!musicPlayerUI) {
+    err("Could not find the music player UI.");
+    return;
+  }
+
+  const styleEl = document.createElement("style");
+  styleEl.textContent = `
+    #zen-sidebar-pip-container {
+      position: fixed;
+      background: transparent;
+      display: none;
+      border-radius: var(--zen-border-radius);
+      overflow: hidden;
+      contain: strict;
+      z-index: 10;
+      pointer-events: none;
+      transform-origin: 50% 100%;
+      transition: ${LAYOUT_TRANSITION};
+      will-change: opacity, transform, top, left, width, height;
+    }
+    #zen-sidebar-pip-container::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      box-sizing: border-box;
+      border: 1px solid color-mix(in srgb, white 8%, transparent);
+      border-radius: inherit;
+      z-index: 2;
+      pointer-events: none;
+    }
+    #zen-sidebar-pip-container > canvas {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      min-width: 0;
+      min-height: 0;
+      border-radius: calc(var(--zen-border-radius) + 2px);
+      object-fit: fill;
+      display: block;
+    }
+    #zen-sidebar-pip-container > browser {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      border: 0;
+    }
+    #zen-sidebar-pip-caption {
+      position: fixed;
+      display: none;
+      box-sizing: border-box;
+      padding: 7px 10px;
+      color: white;
+      background: color-mix(in srgb, black 78%, transparent);
+      border: 1px solid color-mix(in srgb, white 8%, transparent);
+      border-radius: var(--zen-border-radius);
+      box-shadow: 0 3px 12px rgb(0 0 0 / 28%);
+      font: 600 12px/1.35 system-ui, sans-serif;
+      text-align: center;
+      text-wrap: balance;
+      overflow-wrap: anywhere;
+      max-height: calc(4.05em + 14px);
+      overflow: hidden;
+      z-index: 11;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px) scale(0.96);
+      transform-origin: 50% 100%;
+      transition: opacity ${CONFIG.CAPTION_ANIM_MS}ms ease,
+                  transform ${CONFIG.CAPTION_ANIM_MS}ms ease,
+                  height ${CONFIG.LAYOUT_ANIM_MS}ms ease-out,
+                  top ${CONFIG.LAYOUT_ANIM_MS}ms ease-out;
+      will-change: opacity, transform, height, top;
+    }
+    #zen-sidebar-pip-caption[zenslop-caption-visible="true"] {
+      opacity: var(--zenslop-caption-opacity, 1);
+      transform: translateY(0) scale(1);
+    }
+    [zenslop-tab-list-sized="true"] {
+      box-sizing: border-box !important;
+      min-height: 0 !important;
+      height: var(--zenslop-tab-list-height) !important;
+      max-height: var(--zenslop-tab-list-height) !important;
+      flex: 0 1 var(--zenslop-tab-list-height) !important;
+      padding-bottom: 0 !important;
+    }
+    .zen-sidebar-pip-toggle {
+      flex: 0 0 auto;
+      max-width: 24px !important;
+      max-height: 24px !important;
+      width: 24px !important;
+      height: 24px !important;
+      margin: 0 2px !important;
+      padding: 0 !important;
+      box-sizing: border-box !important;
+    }
+    .zen-media-card:not([can-pip]) .zen-sidebar-pip-toggle {
+      display: none !important;
+    }
+    [zenslop-parked="true"] {
+      display: none !important;
+      visibility: collapse !important;
+      width: 0 !important;
+      height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+    }
+  `;
+  document.documentElement.appendChild(styleEl);
+
+  const pipContainer = document.createElement("div");
+  pipContainer.id = "zen-sidebar-pip-container";
+  const canvasEl = document.createElement("canvas");
+  const canvasCtx = canvasEl.getContext("2d", {
+    alpha: false,
+    desynchronized: true,
+  });
+  pipContainer.appendChild(canvasEl);
+  // A viewport-sized layer lets the preview inherit the toolbox's Library
+  // transform without replacing its own entrance/layout animations.
+  const libraryMotionLayer = document.createElement("div");
+  libraryMotionLayer.id = "zenslop-library-motion";
+  libraryMotionLayer.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:10";
+  libraryMotionLayer.appendChild(pipContainer);
+  document.documentElement.appendChild(libraryMotionLayer);
+
+  const captionContainer = document.createElement("div");
+  captionContainer.id = "zen-sidebar-pip-caption";
+  captionContainer.setAttribute("aria-live", "off");
+  libraryMotionLayer.appendChild(captionContainer);
+
+  let lastTop = -1,
+    lastLeft = -1,
+    lastWidth = -1;
+  let lastVisible = null;
+  let lastOpacity = NaN;
+  let lastCaptionOpacity = NaN;
+  let isStreaming = false;
+  let userHidden = false;
+  let scheduled = false;
+  let activeUntil = 0;
+  let hoverActive = false;
+  let lastElevatedTop = null;
+  let lastElevatedAt = 0;
+  let lastCommittedMediaTop = null;
+  let pendingDownAt = 0;
+  let animating = false;
+  let animateOutTimer = null;
+  let videoAspect = CONFIG.DEFAULT_ASPECT;
+  let captionText = "";
+  let captionHideTimer = null;
+  let captionExitTimer = null;
+  let captionNeedsMeasure = false;
+  let captionResizeFromHeight = null;
+  let browserWindowActive = true;
+  let captureMaxDimension = -1;
+  function getCaptionMode() {
+    const mode = safe(() =>
+      Services.prefs.getStringPref(CAPTIONS_PREF, "youtube"),
+    );
+    if (CAPTION_MODES.has(mode)) return mode;
+    // Preserve the meaning of the short-lived checkbox version of this pref.
+    const legacyEnabled = safe(() =>
+      Services.prefs.getBoolPref(CAPTIONS_PREF),
+    );
+    if (typeof legacyEnabled === "boolean") {
+      return legacyEnabled ? "youtube" : "off";
+    }
+    return "youtube";
+  }
+  let captionMode = getCaptionMode();
+  let captionsWhenPipHidden = safe(() =>
+    Services.prefs.getBoolPref(CAPTIONS_WHEN_PIP_HIDDEN_PREF, false),
+  ) === true;
+
+  function setCanvasDimensions(w, h) {
+    if (!(w > 0) || !(h > 0)) return;
+    if (canvasEl.width !== w) canvasEl.width = w;
+    if (canvasEl.height !== h) canvasEl.height = h;
+  }
+
+  function setSourceDimensions(w, h) {
+    if (!(w > 0) || !(h > 0)) return;
+    setCanvasDimensions(w, h);
+    const nextAspect = w / h;
+    if (nextAspect !== videoAspect) {
+      videoAspect = nextAspect;
+      lastTop = lastLeft = lastWidth = -1;
+      bump();
+    }
+  }
+
+  let lastTabListHeight = -1;
+  let lastDownloadsOpen = false;
+  let sizedTabList = null;
+  function getTabListTarget() {
+    if (sizedTabList?.isConnected) return sizedTabList;
+    for (const selector of TAB_LIST_SELECTORS) {
+      const target = document.querySelector(selector);
+      if (target && !target.contains(musicPlayerUI)) return target;
+    }
+    return null;
+  }
+  function clearTabListHeight() {
+    if (sizedTabList?.isConnected) {
+      sizedTabList.removeAttribute("zenslop-tab-list-sized");
+      sizedTabList.style.removeProperty("--zenslop-tab-list-height");
+    }
+    sizedTabList = null;
+    lastTabListHeight = -1;
+  }
+  function setTabListHeight(px) {
+    const target = px >= 0 ? getTabListTarget() : null;
+    if (px === lastTabListHeight && target === sizedTabList) return;
+
+    if (target !== sizedTabList) clearTabListHeight();
+    if (target) {
+      // Clean up the attribute and property used by versions that reserved
+      // space with bottom padding instead of changing the list height.
+      target.removeAttribute("zenslop-tab-padding");
+      target.style.removeProperty("--zenslop-tab-list-padding");
+      target.setAttribute("zenslop-tab-list-sized", "true");
+      target.style.setProperty("--zenslop-tab-list-height", px + "px");
+      sizedTabList = target;
+      lastTabListHeight = px;
+    }
+  }
+
+  function getMediaTopEdge(walkDescendants) {
+    const baseRect = musicPlayerUI.getBoundingClientRect();
+    let top = baseRect.top;
+    if (walkDescendants && (hoverActive || performance.now() < activeUntil)) {
+      const kids = musicPlayerUI.querySelectorAll("*");
+      for (let i = 0; i < kids.length; i++) {
+        const kid = kids[i];
+        const r = kid.getBoundingClientRect();
+        if (r.width !== 0 && r.height !== 0 && r.top < top) {
+          const style = window.getComputedStyle(kid);
+          if (style.position === "absolute" || style.position === "fixed") {
+            continue;
+          }
+          if (style.visibility === "hidden" || style.display === "none" || style.opacity === "0") {
+            continue;
+          }
+          top = r.top;
+        }
+      }
+    }
+    // Zen 1.23's recent downloads are an absolute overlay, not a taller
+    // toolbar. Our fixed preview lives outside Zen's sidebar mask, so place
+    // it above that overlay while Library's stack is open.
+    const foot = document.getElementById("zen-sidebar-foot-buttons");
+    const downloads = document.getElementById("zen-library-download-list");
+    let downloadsOpen = false;
+    if (foot?.hasAttribute("zen-library-stack-open") && downloads) {
+      const style = window.getComputedStyle(downloads);
+      const rect = downloads.getBoundingClientRect();
+      if (style.display !== "none" && style.visibility !== "hidden" &&
+          rect.width > 0 && rect.height > 0) {
+        downloadsOpen = true;
+        top = Math.min(top, rect.top);
+      }
+    }
+    return {
+      top,
+      baseTop: baseRect.top,
+      left: baseRect.left,
+      width: baseRect.width,
+      downloadsOpen,
+    };
+  }
+
+  function getLibraryPresentation() {
+    const library = document.querySelector("zen-library[open]");
+    const toolbox = document.getElementById("navigator-toolbox");
+    const progress = library ? Number(library.openProgress ?? 1) : 0;
+    return {
+      active: !!library,
+      hidden: !!library && progress >= 0.999,
+      toolbox,
+      opacity: library && toolbox
+        ? Number.parseFloat(window.getComputedStyle(toolbox).opacity) || 0
+        : 1,
+    };
+  }
+
+  function syncLibraryMotion(presentation) {
+    if (!presentation.active || !presentation.toolbox) {
+      libraryMotionLayer.style.removeProperty("transform");
+      libraryMotionLayer.style.removeProperty("transform-origin");
+      libraryMotionLayer.style.removeProperty("opacity");
+      return;
+    }
+    const toolbox = presentation.toolbox;
+    const style = window.getComputedStyle(toolbox);
+    const matrix = new DOMMatrixReadOnly(style.transform === "none" ? undefined : style.transform);
+    const [originX, originY] = style.transformOrigin.split(" ").map(Number.parseFloat);
+    const rect = toolbox.getBoundingClientRect();
+    // Convert the toolbox's local pivot to viewport coordinates. Zen uses
+    // uniform scale in normal mode and horizontal translation in compact mode.
+    libraryMotionLayer.style.transformOrigin =
+      `${rect.left - matrix.e + matrix.a * originX}px ${rect.top - matrix.f + matrix.d * originY}px`;
+    libraryMotionLayer.style.transform = style.transform;
+    // Apply the toolbox fade outside local entrance/caption transitions so
+    // they cannot add another easing curve or delay to Zen's spring samples.
+    libraryMotionLayer.style.opacity = String(presentation.opacity);
+  }
+
+  function getMediaPlayerVisibility() {
+    const library = getLibraryPresentation();
+    if (library.hidden) {
+      return { visible: false, opacity: 0 };
+    }
+    if (musicPlayerUI.hidden || musicPlayerUI.hasAttribute("hidden")) {
+      return { visible: false, opacity: 0 };
+    }
+    const cs = window.getComputedStyle(musicPlayerUI);
+    if (cs.display === "none" || cs.visibility === "hidden") {
+      return { visible: false, opacity: 0 };
+    }
+    if (musicPlayerUI.offsetParent === null && cs.position !== "fixed") {
+      return { visible: false, opacity: 0 };
+    }
+    const r = musicPlayerUI.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) {
+      return { visible: false, opacity: 0 };
+    }
+    return { visible: true, opacity: parseFloat(cs.opacity) * library.opacity };
+  }
+
+  function syncPosition() {
+    scheduled = false;
+    if (!isStreaming) return;
+
+    const library = getLibraryPresentation();
+    syncLibraryMotion(library);
+    const { visible, opacity } = getMediaPlayerVisibility();
+    const pipVisible =
+      visible &&
+      opacity > 0.01 &&
+      !userHidden &&
+      !sourceTabActive &&
+      browserWindowActive;
+    const captionVisible =
+      visible &&
+      opacity > 0.01 &&
+      captionMode !== "off" &&
+      (!userHidden || captionsWhenPipHidden) &&
+      !sourceTabActive &&
+      browserWindowActive;
+    const visibilityState = `${pipVisible}:${captionVisible}`;
+    if (visibilityState !== lastVisible) {
+      pipContainer.style.visibility = pipVisible ? "visible" : "hidden";
+      captionContainer.style.visibility = captionVisible
+        ? "visible"
+        : "hidden";
+      lastVisible = visibilityState;
+      _notifyTickState();
+    }
+    if (!animating) {
+      const localOpacity = library.active && library.toolbox && library.opacity > 0
+        ? opacity / library.opacity : opacity;
+      const op = userHidden ? 0 : localOpacity;
+      if (op !== lastOpacity) {
+        pipContainer.style.opacity = String(op);
+        lastOpacity = op;
+      }
+      const captionOpacity = captionVisible ? localOpacity : 0;
+      if (captionOpacity !== lastCaptionOpacity) {
+        captionContainer.style.setProperty(
+          "--zenslop-caption-opacity",
+          String(captionOpacity),
+        );
+        lastCaptionOpacity = captionOpacity;
+      }
+    }
+
+    // Keep untransformed geometry while Library moves the toolbox. Measuring
+    // its transformed controls and also transforming our layer would double
+    // the movement and feed animated coordinates back into tab sizing.
+    if ((pipVisible || captionVisible) && !library.active) {
+      const {
+        top: mediaTopRaw,
+        baseTop,
+        left,
+        width: playerWidth,
+        downloadsOpen,
+      } = getMediaTopEdge(true);
+      if (playerWidth !== 0) {
+        const now = performance.now();
+        if (downloadsOpen !== lastDownloadsOpen) {
+          lastElevatedTop = null;
+          lastCommittedMediaTop = null;
+          pendingDownAt = 0;
+          lastDownloadsOpen = downloadsOpen;
+        }
+        let mediaTop = mediaTopRaw;
+        if (mediaTopRaw < baseTop - 1) {
+          lastElevatedTop = mediaTopRaw;
+          lastElevatedAt = now;
+        } else if (
+          lastElevatedTop !== null &&
+          now - lastElevatedAt < CONFIG.ELEVATED_HOLD_MS
+        ) {
+          mediaTop = lastElevatedTop;
+          schedule();
+        } else {
+          lastElevatedTop = null;
+        }
+
+        // Asymmetric hold for the player's top edge: the PiP may rise
+        // immediately (to stay above the controls), but a downward move is only
+        // committed once the lower edge has held stable for DOWN_HOLD_MS. While
+        // holding we substitute the last committed (higher) edge rather than
+        // skipping the frame, so the position still updates (left/width/aspect)
+        // and always has a value — but doesn't drop for the transient control
+        // oscillation YouTube emits for a few seconds after a fast-forward or a
+        // pause/play while the controls are hovered. The reference persists
+        // across stop/restart (see stopTracking) so pause/play keeps its stable
+        // pre-pause baseline instead of re-seeding mid-oscillation.
+        if (
+          lastCommittedMediaTop !== null &&
+          mediaTop - lastCommittedMediaTop > CONFIG.TOP_SPIKE_MAX
+        ) {
+          if (pendingDownAt === 0) pendingDownAt = now;
+          if (now - pendingDownAt < CONFIG.DOWN_HOLD_MS) {
+            mediaTop = lastCommittedMediaTop;
+            schedule();
+          } else {
+            pendingDownAt = 0;
+            lastCommittedMediaTop = mediaTop;
+          }
+        } else {
+          pendingDownAt = 0;
+          lastCommittedMediaTop = mediaTop;
+        }
+
+        let captionHeight = 0;
+        let videoBottom = mediaTop - CONFIG.GAP;
+        let captionTop = null;
+        if (captionVisible && captionText) {
+          const cs = captionContainer.style;
+          const wasDisplayed = cs.display !== "none";
+          const currentHeight = wasDisplayed
+            ? captionContainer.getBoundingClientRect().height
+            : 0;
+          const nextWidth = playerWidth + "px";
+          const widthChanged = cs.width !== nextWidth;
+          cs.display = "block";
+          cs.width = nextWidth;
+          cs.left = left + "px";
+
+          if (captionNeedsMeasure || widthChanged) {
+            const fromHeight = captionResizeFromHeight ?? currentHeight;
+            cs.height = "auto";
+            const targetHeight = Math.ceil(
+              captionContainer.getBoundingClientRect().height,
+            );
+            if (fromHeight > 0 && Math.abs(targetHeight - fromHeight) > 0.5) {
+              cs.height = fromHeight + "px";
+              void captionContainer.getBoundingClientRect();
+              cs.height = targetHeight + "px";
+              activeUntil = Math.max(
+                activeUntil,
+                now + CONFIG.LAYOUT_ANIM_MS + CONFIG.ANIM_TAIL_MS,
+              );
+            } else {
+              cs.height = targetHeight + "px";
+            }
+            captionNeedsMeasure = false;
+            captionResizeFromHeight = null;
+          }
+
+          captionHeight = Math.ceil(
+            Number.parseFloat(cs.height) ||
+            captionContainer.getBoundingClientRect().height,
+          );
+          captionTop = mediaTop - CONFIG.GAP - captionHeight;
+          cs.top = captionTop + "px";
+          if (pipVisible) videoBottom = captionTop - CONFIG.GAP;
+        } else {
+          captionContainer.style.display = "none";
+        }
+
+        let occupiedTop = captionTop;
+        if (pipVisible) {
+          const availableHeight = Math.max(2, videoBottom);
+          let width = playerWidth;
+          let height = width / videoAspect;
+          const effectiveMaxHeight = Math.max(
+            2,
+            Math.min(playerWidth, availableHeight),
+          );
+          if (height > effectiveMaxHeight) {
+            height = effectiveMaxHeight;
+            width = height * videoAspect;
+          }
+          const adjustedLeft = left + (playerWidth - width) / 2;
+
+          const nextCaptureMaxDimension = Math.max(
+            160,
+            Math.ceil(Math.max(width, height)),
+          );
+          if (nextCaptureMaxDimension !== captureMaxDimension) {
+            captureMaxDimension = nextCaptureMaxDimension;
+            const info = sourceBC ? actorRegistry.get(sourceBC.id) : null;
+            info?.setMaxDimension?.(captureMaxDimension);
+          }
+
+          const top = videoBottom - height;
+          occupiedTop = top;
+          if (
+            top !== lastTop ||
+            adjustedLeft !== lastLeft ||
+            width !== lastWidth
+          ) {
+            const s = pipContainer.style;
+            s.width = width + "px";
+            s.height = height + "px";
+            s.left = adjustedLeft + "px";
+            s.top = top + "px";
+            lastTop = top;
+            lastLeft = adjustedLeft;
+            lastWidth = width;
+            activeUntil = now + CONFIG.ANIM_TAIL_MS;
+          }
+        }
+        const tabList = getTabListTarget();
+        if (tabList && occupiedTop !== null) {
+          const tabListTop = tabList.getBoundingClientRect().top;
+          // Keep a small separation between the final tab and the fixed PiP.
+          const availableTabListHeight = Math.max(
+            0,
+            Math.floor(occupiedTop - CONFIG.TAB_LIST_GAP - tabListTop),
+          );
+          setTabListHeight(availableTabListHeight);
+        } else if (!pipVisible) {
+          clearTabListHeight();
+        }
+      }
+    } else if (!pipVisible && !captionVisible) {
+      captionContainer.style.display = "none";
+      clearTabListHeight();
+    }
+
+    if (performance.now() < activeUntil) schedule();
+  }
+
+  function schedule() {
+    if (scheduled || !isStreaming) return;
+    scheduled = true;
+    requestAnimationFrame(syncPosition);
+  }
+
+  function bump() {
+    activeUntil = performance.now() + CONFIG.ANIM_TAIL_MS;
+    schedule();
+  }
+
+  function clearCaptionTimers() {
+    if (captionHideTimer) {
+      clearTimeout(captionHideTimer);
+      captionHideTimer = null;
+    }
+    if (captionExitTimer) {
+      clearTimeout(captionExitTimer);
+      captionExitTimer = null;
+    }
+  }
+
+  function clearCaptionImmediately() {
+    clearCaptionTimers();
+    captionContainer.removeAttribute("zenslop-caption-visible");
+    captionContainer.textContent = "";
+    captionContainer.style.display = "none";
+    captionContainer.style.removeProperty("height");
+    captionText = "";
+    captionNeedsMeasure = false;
+    captionResizeFromHeight = null;
+    lastTop = lastLeft = lastWidth = -1;
+  }
+
+  function showCaption(next) {
+    const wasEmpty = !captionText;
+    clearCaptionTimers();
+    if (captionContainer.style.display !== "none") {
+      const currentHeight = captionContainer.getBoundingClientRect().height;
+      if (currentHeight > 0) captionResizeFromHeight = currentHeight;
+    }
+    captionNeedsMeasure = true;
+    captionText = next;
+    captionContainer.textContent = next;
+    lastTop = lastLeft = lastWidth = -1;
+    if (isStreaming) bump();
+
+    if (wasEmpty) {
+      captionContainer.removeAttribute("zenslop-caption-visible");
+      requestAnimationFrame(() => {
+        if (!captionText) return;
+        // syncPosition has now made the caption measurable and positioned it.
+        // Flush that hidden state so the following attribute change transitions.
+        void captionContainer.getBoundingClientRect();
+        captionContainer.setAttribute("zenslop-caption-visible", "true");
+      });
+    } else {
+      captionContainer.setAttribute("zenslop-caption-visible", "true");
+    }
+  }
+
+  function hideCaptionNow() {
+    clearCaptionTimers();
+    if (!captionText) {
+      captionContainer.removeAttribute("zenslop-caption-visible");
+      return;
+    }
+    captionContainer.removeAttribute("zenslop-caption-visible");
+    captionExitTimer = setTimeout(() => {
+      captionExitTimer = null;
+      captionText = "";
+      captionContainer.textContent = "";
+      captionContainer.style.removeProperty("height");
+      captionNeedsMeasure = false;
+      captionResizeFromHeight = null;
+      lastTop = lastLeft = lastWidth = -1;
+      if (isStreaming) bump();
+    }, CONFIG.CAPTION_ANIM_MS);
+  }
+
+  function hideCaptionAfterGap() {
+    if (!captionText || captionHideTimer || captionExitTimer) return;
+    captionHideTimer = setTimeout(() => {
+      captionHideTimer = null;
+      captionContainer.removeAttribute("zenslop-caption-visible");
+      captionExitTimer = setTimeout(() => {
+        captionExitTimer = null;
+        captionText = "";
+        captionContainer.textContent = "";
+        captionContainer.style.removeProperty("height");
+        captionNeedsMeasure = false;
+        captionResizeFromHeight = null;
+        lastTop = lastLeft = lastWidth = -1;
+        if (isStreaming) bump();
+      }, CONFIG.CAPTION_ANIM_MS);
+    }, CONFIG.CAPTION_GAP_GRACE_MS);
+  }
+
+  function startTracking() {
+    lastTop = lastLeft = lastWidth = -1;
+    lastVisible = null;
+    lastOpacity = NaN;
+    lastCaptionOpacity = NaN;
+    captureMaxDimension = -1;
+    bump();
+    _notifyTickState();
+  }
+  function stopTracking() {
+    activeUntil = 0;
+    hoverActive = false;
+    lastElevatedTop = null;
+    lastElevatedAt = 0;
+    // NB: lastCommittedMediaTop is intentionally NOT reset here. The sidebar
+    // player's top edge is stable across a pause/play, so keeping the reference
+    // lets the asymmetric hold resist the transient control oscillation on
+    // restart instead of re-seeding mid-glitch. (pendingDownAt is reset — a
+    // fresh timer per stream is fine and self-heals on the next up-frame.)
+    pendingDownAt = 0;
+    clearTabListHeight();
+    sourceTabActive = false;
+    _notifyTickState();
+  }
+
+  musicPlayerUI.addEventListener("mouseenter", () => {
+    hoverActive = true;
+    bump();
+  });
+  musicPlayerUI.addEventListener("mouseleave", () => {
+    hoverActive = false;
+    bump();
+  });
+  for (const ev of [
+    "transitionrun",
+    "transitionend",
+    "animationstart",
+    "animationend",
+  ]) {
+    musicPlayerUI.addEventListener(ev, bump);
+  }
+
+  safe(() => {
+    const ro = new ResizeObserver(bump);
+    ro.observe(musicPlayerUI);
+    ro.observe(document.documentElement);
+  });
+
+  new MutationObserver(bump).observe(musicPlayerUI, {
+    attributes: true,
+    attributeFilter: ["hidden", "style", "class", "open"],
+  });
+  const sidebarLayout = musicPlayerUI.parentElement;
+  if (sidebarLayout) {
+    // Library changes sibling hover attributes/animations without resizing
+    // the media toolbar itself. Watch the shared layout, not just the player.
+    const libraryObserver = new MutationObserver(bump);
+    libraryObserver.observe(sidebarLayout, {
+      attributes: true,
+      subtree: true,
+      attributeFilter: ["zen-library-stack-open", "zen-library-stack-closing"],
+    });
+    for (const type of ["transitionrun", "transitionend", "animationstart", "animationend"]) {
+      sidebarLayout.addEventListener(type, bump);
+    }
+    window.addEventListener("unload", () => {
+      libraryObserver.disconnect();
+      for (const type of ["transitionrun", "transitionend", "animationstart", "animationend"]) {
+        sidebarLayout.removeEventListener(type, bump);
+      }
+      clearTabListHeight();
+    }, { once: true });
+  }
+  window.addEventListener("resize", bump);
+
+  // Zen writes the toolbox transform/opacity on each spring update. Follow
+  // those exact samples, including swipe gestures and interrupted animations.
+  const libraryVisibilityObserver = new MutationObserver(records => {
+    if (!records.some(record => record.target.localName === "zen-library" ||
+        record.target.id === "navigator-toolbox")) return;
+    _notifyTickState();
+    bump();
+  });
+  libraryVisibilityObserver.observe(document.documentElement, {
+    attributes: true, subtree: true, attributeFilter: ["open", "style"],
+  });
+  window.addEventListener("unload", () => libraryVisibilityObserver.disconnect(), { once: true });
+
+  function updateBrowserActivity() {
+    const nextActive =
+      document.visibilityState !== "hidden" &&
+      window.windowState !== window.STATE_MINIMIZED &&
+      safe(() => Services.focus.activeWindow === window) !== false;
+    if (nextActive === browserWindowActive) return;
+    browserWindowActive = nextActive;
+    if (!browserWindowActive) {
+      pipContainer.style.visibility = "hidden";
+      captionContainer.style.visibility = "hidden";
+      clearTabListHeight();
+    }
+    if (isStreaming) bump();
+    _notifyTickState();
+  }
+
+  window.addEventListener("activate", updateBrowserActivity);
+  window.addEventListener("deactivate", updateBrowserActivity);
+  window.addEventListener("sizemodechange", updateBrowserActivity);
+  document.addEventListener("visibilitychange", updateBrowserActivity);
+  setTimeout(updateBrowserActivity, 0);
+
+  const EYE_SVG =
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='context-fill' fill-opacity='context-fill-opacity'>" +
+    "<path d='M12 5c-7 0-11 7-11 7s4 7 11 7 11-7 11-7-4-7-11-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z'/></svg>";
+  const EYE_OFF_SVG =
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='context-fill' fill-opacity='context-fill-opacity'>" +
+    "<path d='M2 2l20 20-1.4 1.4-3.5-3.5A12 12 0 0 1 12 21C5 21 1 14 1 14a20 20 0 0 1 4.6-5.6L.6 3.4 2 2zm10 6a4 4 0 0 1 4 4c0 .6-.1 1.1-.3 1.6l-5.3-5.3c.5-.2 1-.3 1.6-.3zM12 5c7 0 11 7 11 7a20 20 0 0 1-3.7 4.6l-2.1-2.1A8 8 0 0 0 12 7c-.7 0-1.4.1-2 .3L7.7 5C9 4.4 10.4 5 12 5z'/></svg>";
+  const eyeUrl = (svg) =>
+    `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+  const EYE_URL = eyeUrl(EYE_SVG);
+  const EYE_OFF_URL = eyeUrl(EYE_OFF_SVG);
+  const STRIPPED_ATTRS = [
+    "command",
+    "oncommand",
+    "onclick",
+    "data-l10n-id",
+    "style",
+    "hidden",
+    "collapsed",
+    "disabled",
+    "aria-hidden",
+  ];
+
+  const togglesByNativeButton = new Map();
+
+  function syncToggleIcons() {
+    for (const [nativeButton, toggle] of togglesByNativeButton) {
+      if (!nativeButton.isConnected || !toggle.isConnected) {
+        togglesByNativeButton.delete(nativeButton);
+        continue;
+      }
+      const icon = userHidden ? EYE_OFF_URL : EYE_URL;
+      if (toggle.style.listStyleImage !== icon) {
+        toggle.style.listStyleImage = icon;
+      }
+    }
+  }
+
+  function parkNativePipButton(btn) {
+    if (!btn || btn.hasAttribute("zenslop-toggle")) return;
+    if (btn.getAttribute("zenslop-parked") !== "true") {
+      btn.setAttribute("zenslop-parked", "true");
+    }
+    if (btn.style.display !== "none") {
+      btn.style.display = "none";
+    }
+    if (btn.getAttribute("aria-hidden") !== "true") {
+      btn.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  function buildToggle(template) {
+    const btn = template.cloneNode(true);
+    btn.removeAttribute("id");
+    btn.classList.remove("zen-media-pip-button");
+    btn.classList.add("zen-sidebar-pip-toggle");
+    btn.removeAttribute("zenslop-parked");
+    btn.setAttribute("zenslop-toggle", "true");
+    btn.setAttribute("tooltiptext", "Toggle sidebar PiP");
+    for (const a of STRIPPED_ATTRS) btn.removeAttribute(a);
+    btn.style.listStyleImage = userHidden ? EYE_OFF_URL : EYE_URL;
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      userHidden = !userHidden;
+      syncToggleIcons();
+      if (userHidden) clearTabListHeight();
+      bump();
+      _notifyTickState();
+    });
+    return btn;
+  }
+
+  function placeToggles() {
+    for (const [nativeButton, toggle] of togglesByNativeButton) {
+      if (!nativeButton.isConnected || !toggle.isConnected) {
+        togglesByNativeButton.delete(nativeButton);
+      }
+    }
+
+    const nativeButtons = musicPlayerUI.querySelectorAll(PIP_BUTTON_SELECTORS);
+    for (const nativeButton of nativeButtons) {
+      if (nativeButton.hasAttribute("zenslop-toggle")) continue;
+      const existingToggle = togglesByNativeButton.get(nativeButton);
+      if (existingToggle?.isConnected) {
+        parkNativePipButton(nativeButton);
+        continue;
+      }
+      if (!nativeButton.parentNode) continue;
+      const toggle = buildToggle(nativeButton);
+      nativeButton.parentNode.insertBefore(toggle, nativeButton);
+      togglesByNativeButton.set(nativeButton, toggle);
+      parkNativePipButton(nativeButton);
+    }
+    syncToggleIcons();
+  }
+
+  placeToggles();
+  new MutationObserver(() => {
+    placeToggles();
+  }).observe(musicPlayerUI, {
+    attributes: true,
+    attributeFilter: ["hidden", "style", "class", "collapsed"],
+    childList: true,
+    subtree: true,
+  });
+
+  let sourceBC = null;
+  let sourceTabActive = false;
+  let lastPipOpenAt = 0;
+  const availableSources = new Map();
+  const actorRegistry = new Map();
+  const nativeSources = new Map();
+  let nativeSession = null;
+  let nativeSerial = 0;
+  let nativeFailedSource = null;
+  let nativeFallbackReason = "";
+  let rendererDisposed = false;
+  const nativeMediaAdapters = new Map();
+
+  function installNativeMediaAdapter() {
+    // Zen 1.23 hides cards whenever Gecko reports PiP mode. Visual cloning
+    // sets that flag too, causing hide -> stop clone -> show -> clone loops.
+    // Override only the visibility decision for OUR source while OUR receiver
+    // is attaching/presenting; regular PiP/fullscreen keeps Zen's behavior.
+    const card = window.gZenMediaController?.frontCard;
+    const prototype = card && Object.getPrototypeOf(card);
+    if (nativeMediaAdapters.has(prototype)) return;
+    const descriptor = prototype && Object.getOwnPropertyDescriptor(prototype, "shouldBeVisible");
+    if (!descriptor?.get || !descriptor.configurable) {
+      throw new Error("Zen media visibility adapter unavailable; using canvas");
+    }
+    const getter = function () {
+      if (nativeSession?.cloning && this.controller &&
+          this.browser?.browsingContext?.id === nativeSession.bc.top.id &&
+          !document.documentElement.hasAttribute("inDOMFullscreen")) {
+        return gBrowser.selectedBrowser.browserId !== this.browser.browserId;
+      }
+      return descriptor.get.call(this);
+    };
+    Object.defineProperty(prototype, "shouldBeVisible", { ...descriptor, get: getter });
+    nativeMediaAdapters.set(prototype, { descriptor, getter });
+  }
+
+  function restoreNativeMediaAdapters() {
+    for (const [prototype, { descriptor, getter }] of nativeMediaAdapters) {
+      if (Object.getOwnPropertyDescriptor(prototype, "shouldBeVisible")?.get === getter) {
+        Object.defineProperty(prototype, "shouldBeVisible", descriptor);
+      }
+    }
+    nativeMediaAdapters.clear();
+  }
+
+  function nativeQuery(session, name, data = {}) {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error(`${name} timed out`)), 2000);
+      try {
+        const actor = session.browser.browsingContext.currentWindowGlobal
+          .getActor("ZenSidebarNative");
+        Promise.resolve(actor.sendQuery(name, {
+          ...data, sessionId: session.id,
+        })).then(resolve, reject).finally(() => clearTimeout(timer));
+      } catch (error) {
+        clearTimeout(timer);
+        reject(error);
+      }
+    });
+  }
+
+  function stopNativePreview() {
+    const session = nativeSession;
+    if (!session) return;
+    nativeSession = null;
+    clearTimeout(session.healthTimer);
+    safe(() => session.browser.browsingContext.currentWindowGlobal
+      .getActor("ZenSidebarNative").sendAsyncMessage("ZenPiP:NativeStop", {
+        sessionId: session.id,
+      }));
+    session.browser.remove();
+    // Retain the fallback object and restore it after native output ends.
+    if (!canvasEl.isConnected) pipContainer.appendChild(canvasEl);
+  }
+
+  function failNativePreview(session, error) {
+    if (nativeSession !== session) return;
+    nativeFailedSource = session.source;
+    nativeFallbackReason = String(error);
+    warn("Native preview unavailable; using canvas:", nativeFallbackReason);
+    stopNativePreview();
+    _notifyTickState();
+  }
+
+  async function nativePictureVisible(session, width, height) {
+    // Native clones sometimes leave all media-element counters at zero.
+    // A tiny receiver snapshot is an alternative first-frame proof, only
+    // during startup. All-black output is inconclusive and falls back safely.
+    const snapshot = await new Promise((resolve, reject) => {
+      let expired = false;
+      const timer = setTimeout(() => {
+        expired = true;
+        reject(new Error("Native presentation snapshot timed out"));
+      }, 1500);
+      Promise.resolve().then(() => session.browser.browsingContext.currentWindowGlobal
+        .drawSnapshot(new DOMRect(0, 0, width, height),
+          Math.min(1, 32 / Math.max(width, height)), "rgb(0, 0, 0)"))
+        .then(bitmap => {
+          if (expired) bitmap.close();
+          else resolve(bitmap);
+        }, reject).finally(() => clearTimeout(timer));
+    });
+    try {
+      const probe = document.createElement("canvas");
+      probe.width = probe.height = 16;
+      const ctx = probe.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(snapshot, 0, 0, 16, 16);
+      const pixels = ctx.getImageData(0, 0, 16, 16).data;
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i] > 8 || pixels[i + 1] > 8 || pixels[i + 2] > 8) return true;
+      }
+      return false;
+    } finally {
+      snapshot.close();
+    }
+  }
+
+  async function startNativePreview(bc, source) {
+    const browser = document.createXULElement("browser");
+    const session = nativeSession = {
+      id: ++nativeSerial, browser, bc, source, ready: false,
+    };
+    const check = () => {
+      if (nativeSession !== session || rendererDisposed ||
+          sourceBC !== bc || nativeSources.get(bc.id) !== source ||
+          bc.currentWindowGlobal?.innerWindowId !== source.documentId) {
+        throw new Error("Native startup cancelled or source navigated");
+      }
+    };
+    try {
+      const global = bc.currentWindowGlobal;
+      const sourceBrowser = Array.from(gBrowser.tabs).find(tab =>
+        tab.linkedBrowser?.browsingContext?.id === bc.top.id)?.linkedBrowser;
+      const pid = global?.domProcess?.childID;
+      if (!sourceBrowser || pid == null || !source.videoRef || !source.documentId) {
+        throw new Error("Native source/process identity unavailable");
+      }
+      // A remote type alone does not prove process equality. For isolated
+      // subframes, use canvas until a reliable affinity mechanism is available.
+      if (sourceBrowser.browsingContext.currentWindowGlobal?.domProcess?.childID !== pid) {
+        throw new Error("Source iframe is in a separate content process");
+      }
+      browser.setAttribute("type", "content");
+      browser.setAttribute("remote", "true");
+      browser.setAttribute("nodefaultsrc", "true");
+      browser.sameProcessAsFrameLoader = sourceBrowser.frameLoader;
+      browser.setAttribute("remoteType", global.domProcess.remoteType);
+      browser.setAttribute("initialBrowsingContextGroupId", bc.group.id);
+      const attrs = global.documentPrincipal.originAttributes;
+      browser.setAttribute("usercontextid", attrs.userContextId || 0);
+      if (attrs.privateBrowsingId) browser.setAttribute("privatebrowsing", "true");
+      browser.setAttribute("tabindex", "-1");
+      browser.setAttribute("aria-label", "Sidebar video preview");
+      pipContainer.insertBefore(browser, pipContainer.firstChild);
+      browser.loadURI(Services.io.newURI("about:blank"), {
+        triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
+      });
+      const deadline = Date.now() + 6000;
+      let ready = false;
+      while (Date.now() < deadline) {
+        check();
+        safe(() => { browser.docShellIsActive = true; });
+        if (browser.browsingContext?.currentWindowGlobal) {
+          try { ready = (await nativeQuery(session, "ZenPiP:NativeReady"))?.ready; }
+          catch (_) { /* Actor propagation or document load may still be pending. */ }
+          if (ready) break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      check();
+      if (!ready) throw new Error("Native receiver did not initialize");
+      const receiver = browser.browsingContext.currentWindowGlobal;
+      const receiverAttrs = receiver.documentPrincipal.originAttributes;
+      if (receiver.domProcess?.childID !== pid ||
+          (receiverAttrs.userContextId || 0) !== (attrs.userContextId || 0) ||
+          (receiverAttrs.privateBrowsingId || 0) !== (attrs.privateBrowsingId || 0)) {
+        throw new Error("Native receiver process/container/private context mismatch");
+      }
+      installNativeMediaAdapter();
+      session.cloning = true;
+      await nativeQuery(session, "ZenPiP:NativeStart", source);
+      const presentationDeadline = Date.now() + 3000;
+      let presented = false;
+      while (Date.now() < presentationDeadline) {
+        check();
+        const health = await nativeQuery(session, "ZenPiP:NativeHealth");
+        check();
+        if (!health?.ok) throw new Error(health?.error || "Native attachment failed");
+        if (health.width > 0 && health.height > 0 &&
+            (health.presented || await nativePictureVisible(session, health.width, health.height))) {
+          presented = true;
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 150));
+      }
+      check();
+      if (!presented) throw new Error("Native video presentation could not be confirmed");
+      // Detach rather than CSS-hide: user-origin !important styles can leave
+      // the fallback canvas covering an otherwise working native receiver.
+      canvasEl.remove();
+      session.ready = true;
+      nativeFallbackReason = "";
+      _notifyTickState();
+      log("Native video preview active");
+      const monitor = async () => {
+        if (nativeSession !== session) return;
+        try {
+          check();
+          const health = await nativeQuery(session, "ZenPiP:NativeHealth");
+          check();
+          if (!health?.ok) throw new Error(health?.error || "Native preview disconnected");
+          if (!health.paused && health.lastFrameAt && Date.now() - health.lastFrameAt > 15000) {
+            throw new Error("Native preview stopped presenting frames");
+          }
+          session.healthTimer = setTimeout(monitor, 5000);
+        } catch (error) { failNativePreview(session, error); }
+      };
+      session.healthTimer = setTimeout(monitor, 5000);
+    } catch (error) {
+      failNativePreview(session, error);
+    }
+  }
+
+  const rendererObserver = {
+    observe() {
+      nativeFailedSource = null;
+      nativeFallbackReason = "";
+      stopNativePreview();
+      _notifyTickState();
+    },
+  };
+  Services.prefs.addObserver(RENDERER_PREF, rendererObserver);
+  window.addEventListener("unload", () => {
+    rendererDisposed = true;
+    stopNativePreview();
+    restoreNativeMediaAdapters();
+    for (const info of actorRegistry.values()) {
+      info.setProcessingActive?.(false, "off", false);
+      info.stopTick();
+    }
+    Services.prefs.removeObserver(RENDERER_PREF, rendererObserver);
+  }, { once: true });
+
+  const captionsPrefObserver = {
+    observe() {
+      const nextMode = getCaptionMode();
+      const nextWhenHidden = safe(() =>
+        Services.prefs.getBoolPref(CAPTIONS_WHEN_PIP_HIDDEN_PREF, false),
+      ) === true;
+      if (nextMode === captionMode &&
+          nextWhenHidden === captionsWhenPipHidden) return;
+      captionMode = nextMode;
+      captionsWhenPipHidden = nextWhenHidden;
+      if (captionMode === "off") clearCaptionImmediately();
+      if (isStreaming) bump();
+      _notifyTickState();
+    },
+  };
+  safe(() => Services.prefs.addObserver(CAPTIONS_PREF, captionsPrefObserver));
+  safe(() => Services.prefs.addObserver(
+    CAPTIONS_WHEN_PIP_HIDDEN_PREF,
+    captionsPrefObserver,
+  ));
+  window.addEventListener("unload", () => {
+    safe(() => Services.prefs.removeObserver(CAPTIONS_PREF, captionsPrefObserver));
+    safe(() => Services.prefs.removeObserver(
+      CAPTIONS_WHEN_PIP_HIDDEN_PREF,
+      captionsPrefObserver,
+    ));
+  }, { once: true });
+
+  function isTabPlaying(bc) {
+    if (!bc) return false;
+    try {
+      for (const tab of gBrowser.tabs) {
+        if (tab.linkedBrowser?.browsingContext?.id === bc.id) {
+          return tab.hasAttribute("soundplaying");
+        }
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  function getActiveActor() {
+    if (!sourceBC) return null;
+    return (
+      safe(() => sourceBC.currentWindowGlobal?.getActor("ZenSidebarPiP")) ||
+      null
+    );
+  }
+
+  function _notifyTickState() {
+    if (rendererDisposed) return;
+    const { visible, opacity } = getMediaPlayerVisibility();
+    const frameProcessingActive =
+      isStreaming && !userHidden && !sourceTabActive && browserWindowActive &&
+      visible && opacity > 0.01;
+    const source = sourceBC ? nativeSources.get(sourceBC.id) : null;
+    if (nativeSession && (!frameProcessingActive || nativeSession.bc !== sourceBC ||
+        nativeSession.source !== source)) stopNativePreview();
+    if (frameProcessingActive && source && !nativeSession &&
+        nativeFailedSource !== source &&
+        Services.prefs.getStringPref(RENDERER_PREF, "auto") !== "canvas") {
+      startNativePreview(sourceBC, source);
+    }
+    const info = sourceBC ? actorRegistry.get(sourceBC.id) : null;
+    if (!info) return;
+
+    const captionProcessingActive =
+      isStreaming &&
+      captionMode !== "off" &&
+      !sourceTabActive &&
+      browserWindowActive &&
+      visible && opacity > 0.01 &&
+      (!userHidden || captionsWhenPipHidden);
+    const canvasProcessingActive = frameProcessingActive && !nativeSession?.ready;
+    info.setProcessingActive?.(
+      canvasProcessingActive || captionProcessingActive,
+      captionMode,
+      captionProcessingActive,
+    );
+    if (canvasProcessingActive) {
+      info.startTick(info.win || window);
+    } else {
+      info.stopTick();
+    }
+  }
+
+  function awaitNextPipWindow() {
+    let timeoutId = null;
+    const unregister = () =>
+      safe(() => Services.ww.unregisterNotification(observer));
+    const observer = {
+      observe(subject, topic) {
+        if (topic !== "domwindowopened") return;
+        subject.addEventListener(
+          "load",
+          () => {
+            const wt =
+              subject.document?.documentElement?.getAttribute("windowtype");
+            if (wt !== "Toolkit:PictureInPicture") return;
+            unregister();
+            if (timeoutId) clearTimeout(timeoutId);
+          },
+          { once: true },
+        );
+      },
+    };
+    Services.ww.registerNotification(observer);
+    timeoutId = setTimeout(unregister, CONFIG.PIP_OBSERVE_TIMEOUT_MS);
+  }
+
+  window.addEventListener("deactivate", () => {
+    if (!isStreaming) return;
+    if (performance.now() - lastPipOpenAt < CONFIG.PIP_OPEN_DEBOUNCE_MS) return;
+    if (!getActiveActor()) return;
+    awaitNextPipWindow();
+    lastPipOpenAt = performance.now();
+  });
+
+  window.ZenPiPController = {
+    diagnostics() {
+      return {
+        renderer: nativeSession?.ready ? "native" : "canvas",
+        nativeStarting: !!nativeSession && !nativeSession.ready,
+        fallbackReason: nativeFallbackReason,
+      };
+    },
+    getActiveBC() {
+      return sourceBC;
+    },
+    drawFrame({ buf, width, height }) {
+      if (nativeSession?.ready) return;
+      try {
+        // Adaptive capture resolution is independent from layout. The source
+        // aspect is established by MirrorStarted/offerVideo; using each
+        // downscaled frame here created a resolution -> aspect -> layout
+        // feedback loop because even-number rounding slightly changes ratios.
+        setCanvasDimensions(width, height);
+        const img = new ImageData(new Uint8ClampedArray(buf), width, height);
+        canvasCtx.putImageData(img, 0, 0);
+      } catch (e) {
+        err("drawFrame error:", e?.name, e?.message);
+      }
+    },
+    setCaption(text) {
+      if (captionMode === "off") {
+        clearCaptionImmediately();
+        return;
+      }
+      const next = String(text || "").replace(/\s+/g, " ").trim().slice(0, 1000);
+      if (next) {
+        if (next === captionText && !captionHideTimer && !captionExitTimer) return;
+        showCaption(next);
+      } else {
+        hideCaptionAfterGap();
+      }
+    },
+    hideCaption() {
+      hideCaptionNow();
+    },
+    setSourceTabActive(active) {
+      if (sourceTabActive === active) return;
+      sourceTabActive = active;
+      if (sourceTabActive) clearTabListHeight();
+      if (isStreaming) bump();
+      _notifyTickState();
+    },
+    registerSource(id, callbacks) {
+      if (!actorRegistry.has(id)) {
+        actorRegistry.set(id, callbacks);
+      }
+    },
+    unregisterSource(id) {
+      actorRegistry.delete(id);
+      nativeSources.delete(id);
+      if (nativeSession?.bc.id === id) stopNativePreview();
+    },
+    offerVideo(width, height, browsingContext, nativeSource = null) {
+      const id = browsingContext.id;
+      if (nativeSource) nativeSources.set(id, nativeSource);
+      if (availableSources.has(id)) return;
+      availableSources.set(id, { bc: browsingContext, width, height });
+
+      // Only defer when a *different* tab is already mirroring. A re-offer from
+      // the same tab (e.g. YouTube swapping an ad for the real video on the same
+      // <video>, which fires emptied -> playing) must re-activate immediately
+      // instead of queuing behind its own in-flight hide animation.
+      if (sourceBC && sourceBC.id !== id && isTabPlaying(sourceBC)) {
+        log("source queued (existing still playing):", id, "active:", sourceBC.id);
+        return;
+      }
+
+      this._activateSource(width, height, browsingContext);
+    },
+    notifySourceStopped(bc) {
+      availableSources.delete(bc.id);
+
+      if (sourceBC && sourceBC.id === bc.id) {
+        if (availableSources.size > 0) {
+          this._activateSourceAfterHide();
+        } else {
+          this.hideVideo();
+        }
+      }
+    },
+    _activateSourceAfterHide() {
+      if (animateOutTimer) return;
+      const s = pipContainer.style;
+      animating = true;
+      s.transition = "none";
+      s.opacity = userHidden ? "0" : "1";
+      s.transform = "scale(1) translateY(0)";
+      void pipContainer.getBoundingClientRect();
+
+      requestAnimationFrame(() => {
+        s.transition = ANIM_TRANSITION;
+        requestAnimationFrame(() => {
+          s.opacity = "0";
+          s.transform = "scale(0.9) translateY(8px)";
+        });
+      });
+
+      animateOutTimer = setTimeout(() => {
+        animateOutTimer = null;
+        animating = false;
+        sourceBC = null;
+        isStreaming = false;
+        stopTracking();
+
+        if (availableSources.size > 0) {
+          const next = availableSources.values().next().value;
+          this._activateSource(next.width, next.height, next.bc);
+        }
+      }, CONFIG.ANIM_MS + 60);
+    },
+    _activateSource(width, height, browsingContext) {
+      availableSources.delete(browsingContext.id);
+      log("showVideo", width, "x", height, "tab", browsingContext?.id);
+      setSourceDimensions(width, height);
+      const previousSourceBC = sourceBC;
+      const nextSourceBC = browsingContext || null;
+      const sourceChanged =
+        previousSourceBC && nextSourceBC && previousSourceBC.id !== nextSourceBC.id;
+      if (sourceChanged) {
+        const previous = actorRegistry.get(previousSourceBC.id);
+        previous?.setProcessingActive?.(false, "off", false);
+        previous?.stopTick();
+        stopNativePreview();
+      }
+      if (sourceChanged) clearCaptionImmediately();
+      sourceBC = nextSourceBC;
+
+      if (sourceBC) {
+        try {
+          sourceTabActive = gBrowser?.selectedBrowser?.browsingContext?.id === sourceBC.id;
+        } catch (_) {
+          sourceTabActive = false;
+        }
+      }
+
+      if (animateOutTimer) {
+        // We're pre-empting an in-flight hide to re-activate; we're no longer
+        // animating out, so clear the flag or it stays stuck true.
+        clearTimeout(animateOutTimer);
+        animateOutTimer = null;
+        animating = false;
+      }
+
+      const wasStreaming = isStreaming;
+      isStreaming = true;
+      startTracking();
+
+      if (wasStreaming && !sourceChanged) {
+        const s = pipContainer.style;
+        s.opacity = userHidden || sourceTabActive ? "0" : "1";
+        s.visibility = userHidden || sourceTabActive ? "hidden" : "visible";
+        s.transform = "";
+        return;
+      }
+
+      const s = pipContainer.style;
+      s.display = "block";
+      s.visibility = userHidden || sourceTabActive ? "hidden" : "visible";
+
+      if (sourceTabActive) {
+        isStreaming = true;
+        animating = false;
+        startTracking();
+      } else {
+        animating = true;
+        s.transition = "none";
+        s.opacity = "0";
+        s.transform = "scale(0.9) translateY(8px)";
+        void pipContainer.getBoundingClientRect();
+
+        requestAnimationFrame(() => {
+          s.transition = ANIM_TRANSITION;
+          requestAnimationFrame(() => {
+            s.opacity = userHidden ? "0" : "1";
+            s.transform = "scale(1) translateY(0)";
+          });
+        });
+        setTimeout(() => {
+          animating = false;
+          lastOpacity = NaN;
+          lastCaptionOpacity = NaN;
+          s.transition = "";
+        }, CONFIG.ANIM_MS + 60);
+      }
+    },
+
+    hideVideo() {
+      log("hideVideo");
+      if (!isStreaming && !animating) return;
+      if (animateOutTimer) {
+        clearTimeout(animateOutTimer);
+        animateOutTimer = null;
+      }
+
+      animating = true;
+      const s = pipContainer.style;
+      s.transition = "none";
+      s.opacity = userHidden ? "0" : "1";
+      s.transform = "scale(1) translateY(0)";
+      void pipContainer.getBoundingClientRect();
+
+      requestAnimationFrame(() => {
+        s.transition = ANIM_TRANSITION;
+        requestAnimationFrame(() => {
+          s.opacity = "0";
+          s.transform = "scale(0.9) translateY(8px)";
+        });
+      });
+
+      animateOutTimer = setTimeout(() => {
+        animateOutTimer = null;
+        animating = false;
+        safe(() => canvasCtx.clearRect(0, 0, canvasEl.width, canvasEl.height));
+        clearCaptionImmediately();
+        sourceBC = null;
+        s.display = "none";
+        s.transition = "";
+        s.transform = "";
+        isStreaming = false;
+        stopTracking();
+        lastOpacity = NaN;
+        lastCaptionOpacity = NaN;
+        lastVisible = null;
+
+        // A different source may have been queued while this hide was running;
+        // drain it so it isn't stranded until the next pause/play.
+        if (availableSources.size > 0) {
+          const next = availableSources.values().next().value;
+          this._activateSource(next.width, next.height, next.bc);
+        }
+      }, CONFIG.ANIM_MS + 60);
+    },
+  };
+
+  function instantiateActorForOpenTabs() {
+    try {
+      for (const browser of gBrowser?.browsers || []) {
+        const pending = [browser.browsingContext];
+        while (pending.length) {
+          const bc = pending.pop();
+          if (!bc) continue;
+          safe(() => bc.currentWindowGlobal?.getActor("ZenSidebarPiP"));
+          safe(() => pending.push(...bc.children));
+        }
+      }
+    } catch (e) {
+      warn("Could not initialize actors for open tabs:", e);
+    }
+  }
+
+  try {
+    const profileDir = Services.dirsvc.get("ProfD", Ci.nsIFile);
+    const modDir = profileDir.clone();
+    for (const seg of ["chrome", "sine-mods", "Zenslop"]) modDir.append(seg);
+    const modUri = Services.io.newFileURI(modDir);
+    const resProto = Services.io
+      .getProtocolHandler("resource")
+      .QueryInterface(Ci.nsIResProtocolHandler);
+    if (!resProto.hasSubstitution("zen-sidebar-pip")) {
+      resProto.setSubstitution("zen-sidebar-pip", modUri);
+    }
+    log("resource mapped to:", modUri.spec, "exists:", modDir.exists());
+
+    // Keep the receiver actor separate: it must never discover its own clone
+    // as a new source video or run the source caption/capture machinery.
+    try {
+      ChromeUtils.registerWindowActor("ZenSidebarNative", {
+        child: { esModuleURI: "resource://zen-sidebar-pip/native-actor.sys.mjs" },
+        allFrames: true,
+        matches: ["about:blank"],
+        safeForUntrustedWebProcess: true,
+      });
+    } catch (error) {
+      if (error.name !== "NotSupportedError") warn("Native actor registration failed:", error);
+    }
+    ChromeUtils.registerWindowActor("ZenSidebarPiP", {
+      parent: {
+        esModuleURI: "resource://zen-sidebar-pip/parent-actor.sys.mjs",
+      },
+      child: {
+        esModuleURI: "resource://zen-sidebar-pip/content-actor.sys.mjs",
+        events: {
+          DOMContentLoaded: {},
+          pageshow: {},
+          play: { capture: true, mozSystemGroup: true },
+          playing: { capture: true, mozSystemGroup: true },
+          loadedmetadata: { capture: true, mozSystemGroup: true },
+          canplay: { capture: true, mozSystemGroup: true },
+          pause: { capture: true, mozSystemGroup: true },
+          ended: { capture: true, mozSystemGroup: true },
+          emptied: { capture: true, mozSystemGroup: true },
+          volumechange: { capture: true, mozSystemGroup: true },
+        },
+      },
+      messageManagerGroups: ["browsers"],
+      allFrames: true,
+      safeForUntrustedWebProcess: true,
+    });
+  } catch (e) {
+    if (e.name !== "NotSupportedError")
+      err("Failed to register JSWindowActor:", e);
+  }
+
+  // Actor registration is process-global and lazy. Force an instance for
+  // already-open documents so restored playback is discovered, then retry as
+  // the registration reaches existing content processes.
+  instantiateActorForOpenTabs();
+  setTimeout(instantiateActorForOpenTabs, 500);
+  setTimeout(instantiateActorForOpenTabs, 1500);
+
+  log("Zenslop initialized.");
+})();

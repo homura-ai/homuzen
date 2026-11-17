@@ -7,7 +7,7 @@ const root = path.join(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const theme = JSON.parse(read('theme.json'));
 const prefs = JSON.parse(read(theme.preferences));
-const PARTS = ['tab-state-highlighter', 'middle-click-unload', 'more-essentials', 'modify-url-bar-icons', 'sine-mod-search'];
+const PARTS = ['tab-state-highlighter', 'middle-click-unload', 'more-essentials', 'modify-url-bar-icons', 'sine-mod-search', 'theme-fixes'];
 
 test('Sine metadata points updates at homura-ai/homuzen and names existing files', () => {
   for (const field of ['id', 'name', 'description', 'homepage', 'version', 'createdAt', 'updatedAt', 'style', 'preferences', 'fork']) {
@@ -41,7 +41,7 @@ test('every part is an opt-in checkbox and its settings show only while it is on
 });
 
 test('every stylesheet and script is gated by its part preference', () => {
-  for (const part of ['tab-state-highlighter', 'modify-url-bar-icons']) {
+  for (const part of ['tab-state-highlighter', 'modify-url-bar-icons', 'theme-fixes']) {
     const css = read(`${part}/chrome.css`).replace(/\/\*[\s\S]*?\*\//g, '').trim();
     assert.ok(css.startsWith(`@media -moz-pref("mod.homuzen.${part}.enabled") {`), part);
     assert.ok(css.endsWith('}'), part);

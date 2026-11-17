@@ -1,0 +1,34 @@
+/* Neo Zen 1.20.0-neo.0*/
+
+/* Hi, I'm Neo Zen, I'm a theme that has new "features", animations, and a new design, I hope you like it, and I hope you find it useful. */
+
+/* Please considering that Zen browser is still in development, after an update please check if the issue you are experencing is due to a native browser issue. 
+   If it is due to a native browser issue please report it to the developer of Zen browser.
+   If the issue only appears when using Neo Zen please report it to the developer of Neo Zen.*/
+
+/* Starting from version 3.0.0 better called 1.20.0-neo.0 the Nebula animations are no longer included in Neo Zen.*/
+
+/* The compact mode will use the default zen browser theme with small changes, this reduces the amount of code and makes the theme lighter and faster to load.
+   The customizations can not be disabled in this version, and many other features are not customizable as it was in previous versions, that doesn't
+   mean that the customizations won't be added in the future, is just an adaptation to the new rewrite of the theme.*/
+
+/* The version 1.20.0-neo.0 is a rewrite of the theme, it is still in development, and it is not yet finished, but I wanted to release it as soon as possible,
+   however, it took me a long time to rewrite the theme, and I'm still working on it, so please be patient. Why did I do this? Well, I wanted to make the theme
+   lighter, faster, and more efficient using a cleaner code, so I rewrote the theme from scratch.
+
+   I will try to release a new version as soon as possible.
+   Many things are still in development, at least maybe you installed the theme using the main branch which is basically empty at this moment, and the sine
+   settings are not yet implemented, but I will try to implement them as soon as possible */
+
+/* Otherwise, I don't know what I'm doing too :D so please tell me if I did something wrong, if you have any suggestions to improve the theme, please let me know,
+  I'm always open to suggestions and feedback. */
+
+/* Neo Zen 1.20.0-neo.0*/
+
+@import "Animations/Animations.css";
+@import "Customization/Customization.css";
+@import "Customization/Matugen.css";
+@import "Layout/Layout.css";
+@import "Options/Options.css";
+@import "Theme/Features/Features.css";
+@import "Theme/Style/Style.css";
