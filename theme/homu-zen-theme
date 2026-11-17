@@ -192,8 +192,30 @@ def fix_homepage(mid: str, h: str) -> str:
 
 def homuzen_entry() -> dict:
     m = json.loads((HOMUZEN_SRC / "theme.json").read_text())
+    # Sine's installed entries name their stylesheets as {"chrome": ..., "content": ...};
+    # a plain string there is read as a list of characters and no CSS loads.
+    if isinstance(m.get("style"), str):
+        m["style"] = {"chrome": m["style"], "content": ""}
     m.update({"enabled": True, "no-updates": True})
     return m
+
+
+def replacement_prefs(prof: Path, mods: dict) -> dict:
+    """Homuzen part switches for the replaced mods that are on in a profile without Homuzen,
+    so a capture taken before the switch still turns the matching parts on."""
+    if HOMUZEN_ID in mods:
+        return {}
+    have = read_prefs(prof / "prefs.js")
+    out = {}
+    for old in REPLACED_IDS:
+        if not mods.get(old, {}).get("enabled"):
+            continue
+        part = "theme-fixes" if old in ("zen-theme", "homu-zen-theme") else old
+        # The tweaks mod's only fix was off while "Show startup background wipe" was ticked.
+        if part == "theme-fixes" and have.get("homu-zen-theme.startup-wipe.enabled") == "true":
+            continue
+        out[f"mod.homuzen.{part}.enabled"] = "true"
+    return out
 
 
 def homuzen_names() -> list:
@@ -290,6 +312,10 @@ def cmd_capture(args):
     if (prof / "user.js").exists():
         copy_any(prof / "user.js", REPO / "profile/user.js")
     (REPO / "mods").mkdir(exist_ok=True)
+    # Prefs come from the mods as installed, so the replaced mods' settings (which the
+    # Homuzen parts reuse) are kept even before the profile switches to Homuzen.
+    pref_mods = {k: v for k, v in mods.items() if k not in REMOVED_IDS}
+    extra_prefs = replacement_prefs(prof, mods)
     for old in NOT_CAPTURED:
         mods.pop(old, None)
     for mid in mods:
@@ -323,7 +349,9 @@ def cmd_capture(args):
         a, b = before.get(mid, {}).get("version"), mods.get(mid, {}).get("version")
         if a != b:
             print(f"{mid}: {a} -> {b}" + ("" if mid in mods else " (removed)"))
-    prefs = theme_prefs(prof, mods)
+    prefs = {**theme_prefs(prof, pref_mods), **extra_prefs}
+    prefs.pop("homu-zen-theme.startup-wipe.enabled", None)
+    prefs = dict(sorted(prefs.items()))
     lines = ["// Theme and mod settings captured by `homu-zen-theme capture`. `homu-zen-theme apply` writes",
              "// these into prefs.js (not user.js, so changes made in Zen's settings still stick).", ""]
     lines += [f'user_pref("{k}", {v});' for k, v in prefs.items()]
