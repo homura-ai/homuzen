@@ -766,40 +766,6 @@
     "no-updates": false,
     "enabled": false
   },
-  "focus-space": {
-    "id": "focus-space",
-    "name": "Focus Space",
-    "description": "A live stopwatch in the active workspace indicator showing how long you've been focused in the current space, plus a stacked ratio bar at the sidebar foot showing how your time splits across your spaces by day, week, or month. Sessions are logged, editable, and exportable as CSV or JSON; an optional page log records which URL and tab you were on. Includes a one-click pause/resume toggle and a customizable keyboard shortcut (F9 by default).",
-    "author": "Zebeqo",
-    "version": "1.4.1",
-    "homepage": "https://github.com/homura-ai/Zen-Focus-Space",
-    "tags": [
-      "focus",
-      "workspace",
-      "productivity"
-    ],
-    "image": "https://raw.githubusercontent.com/01-1/Zen-Focus-Space/main/preview.png",
-    "readme": "https://raw.githubusercontent.com/01-1/Zen-Focus-Space/main/README.md",
-    "createdAt": "2026-06-19",
-    "updatedAt": "2026-11-16T20:12:43Z",
-    "fork": [
-      "zen"
-    ],
-    "preferences": "preferences.json",
-    "style": {
-      "chrome": "focus-space.css",
-      "content": ""
-    },
-    "scripts": {
-      "focus-space.uc.mjs": {
-        "include": [
-          "chrome://browser/content/browser.xhtml"
-        ]
-      }
-    },
-    "no-updates": false,
-    "enabled": false
-  },
   "dialog-fix": {
     "id": "dialog-fix",
     "homepage": "https://github.com/qumeqa/dialog-fix",
@@ -866,84 +832,36 @@
     "enabled": true,
     "updatedAt": "2026-11-16T20:25:23Z"
   },
-  "more-essentials": {
-    "id": "more-essentials",
-    "name": "More Essentials",
-    "description": "Set Zen's Essentials cap to infinite or a custom number.",
-    "homepage": "https://github.com/homura-ai/more-essentials",
-    "readme": "https://raw.githubusercontent.com/homura-ai/more-essentials/main/README.md",
-    "version": "1.0.2",
-    "createdAt": "2026-09-21",
-    "updatedAt": "2026-11-16T20:03:00Z",
-    "style": {
-      "chrome": "chrome.css",
-      "content": ""
-    },
-    "fork": [
-      "zen"
-    ],
+  "homuzen": {
+    "id": "homuzen",
+    "name": "Homuzen",
+    "description": "Homura's Zen tweaks in one mod, each off until you turn it on: Tab State Highlighter, middle-click unload for regular tabs, More Essentials, Modify URL Bar Icons, Sine Mod Search and fixes for clashes between the mods in Homura's theme.",
+    "homepage": "https://github.com/homura-ai/homuzen",
+    "readme": "https://raw.githubusercontent.com/homura-ai/homuzen/main/README.md",
+    "image": "https://raw.githubusercontent.com/homura-ai/homuzen/main/sine-mod-search/screenshot.png",
+    "author": "homura-ai",
+    "version": "1.1.0",
+    "createdAt": "2026-11-16",
+    "updatedAt": "2026-11-16T23:30:00Z",
+    "style": "chrome.css",
     "preferences": "preferences.json",
     "scripts": {
-      "more-essentials.uc.js": {
+      "middle-click-unload/middle-click-unload.uc.js": {
         "include": [
           "chrome://browser/content/browser.xhtml"
         ]
-      }
-    },
-    "supportsUnload": true,
-    "no-updates": false,
-    "enabled": true
-  },
-  "modify-url-bar-icons": {
-    "id": "modify-url-bar-icons",
-    "name": "Modify URL Bar Icons",
-    "description": "Move URL bar icons (bookmark star, reader view, site identity, extensions, copy URL and more) into any toolbar with Customize Toolbar drag and drop.",
-    "homepage": "https://github.com/homura-ai/modify-url-bar-icons",
-    "readme": "https://github.com/homura-ai/modify-url-bar-icons/raw/refs/heads/main/README.md",
-    "image": "https://github.com/homura-ai/modify-url-bar-icons/raw/refs/heads/main/preview.svg",
-    "version": "1.0.1",
-    "createdAt": "2026-09-21",
-    "updatedAt": "2026-11-16",
-    "style": {
-      "chrome": "chrome.css",
-      "content": ""
-    },
-    "preferences": "preferences.json",
-    "scripts": {
-      "modify-url-bar-icons.uc.js": {
+      },
+      "more-essentials/more-essentials.uc.js": {
         "include": [
           "chrome://browser/content/browser.xhtml"
         ]
-      }
-    },
-    "supportsUnload": true,
-    "tags": [
-      "chrome",
-      "urlbar",
-      "toolbar"
-    ],
-    "fork": [
-      "zen"
-    ],
-    "no-updates": false,
-    "enabled": true
-  },
-  "sine-mod-search": {
-    "id": "sine-mod-search",
-    "name": "Sine Mod Search",
-    "description": "Search installed mods by name, description, settings labels, options, and preference keys.",
-    "homepage": "https://github.com/homura-ai/sine-mod-search",
-    "readme": "https://raw.githubusercontent.com/homura-ai/sine-mod-search/main/README.md",
-    "image": "https://raw.githubusercontent.com/homura-ai/sine-mod-search/main/screenshot.png",
-    "version": "1.1.1",
-    "createdAt": "2026-09-21",
-    "updatedAt": "2026-11-16T20:10:00Z",
-    "style": {
-      "chrome": "chrome.css",
-      "content": ""
-    },
-    "scripts": {
-      "sine-mod-search.uc.js": {
+      },
+      "modify-url-bar-icons/modify-url-bar-icons.uc.js": {
+        "include": [
+          "chrome://browser/content/browser.xhtml"
+        ]
+      },
+      "sine-mod-search/sine-mod-search.uc.js": {
         "include": [
           "about:preferences*",
           "about:settings*"
@@ -951,55 +869,14 @@
       }
     },
     "supportsUnload": true,
-    "fork": [
-      "zen"
-    ],
-    "preferences": "",
-    "no-updates": false,
-    "enabled": true
-  },
-  "tab-state-highlighter": {
-    "id": "tab-state-highlighter",
-    "name": "Tab State Highlighter",
-    "description": "Apply separate loaded and unloaded effects to Essentials and regular tabs, with optional unloaded-tab fading.",
-    "homepage": "https://github.com/homura-ai/tab-state-highlighter",
-    "version": "2.1.1",
-    "createdAt": "2026-09-21",
-    "updatedAt": "2026-11-16T20:06:00Z",
-    "style": {
-      "chrome": "chrome.css",
-      "content": ""
-    },
-    "preferences": "preferences.json",
     "tags": [
       "chrome",
       "tabs",
-      "tab-state"
-    ],
-    "fork": [
-      "zen"
-    ],
-    "readme": "https://raw.githubusercontent.com/homura-ai/tab-state-highlighter/main/README.md",
-    "no-updates": false,
-    "enabled": true
-  },
-  "homu-zen-theme": {
-    "id": "homu-zen-theme",
-    "name": "Homu Zen Theme Tweaks",
-    "description": "Homura's opt-in fixes for clashes between the mods in this theme. Every option is off by default.",
-    "homepage": "https://github.com/homura-ai/homu-zen-theme",
-    "author": "homura-ai",
-    "version": "1.0.0",
-    "createdAt": "2026-11-16",
-    "updatedAt": "2026-11-16",
-    "style": {
-      "chrome": "chrome.css",
-      "content": ""
-    },
-    "preferences": "preferences.json",
-    "tags": [
-      "chrome",
-      "fixes"
+      "tab-state",
+      "essentials",
+      "urlbar",
+      "toolbar",
+      "sine"
     ],
     "fork": [
       "zen"

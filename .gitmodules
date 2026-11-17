@@ -1,0 +1,3 @@
+[submodule "theme/mods-private"]
+	path = theme/mods-private
+	url = ../homu-zen-theme-private.git

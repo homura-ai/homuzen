@@ -1,0 +1,18 @@
+/* Theme fixes — fixes for clashes between the mods in Homura's theme (theme/).
+ *
+ * Startup background wipe. Neo Zen's Color Fixer forces
+ * `transition: background 2s, opacity 2s` onto Zen's window background layer
+ * (.zen-browser-generic-background::after). At startup the background changes
+ * from the plain colour to the workspace gradient, and that 2s transition plays
+ * it as a slow diagonal wipe. Zen's own value for this layer is
+ * `transition: 0s`. While Zen is still starting up (`zen-before-loaded`), put
+ * Zen's value back, so the gradient appears at once. Workspace switches after
+ * startup keep Neo Zen's smooth transition.
+ */
+
+/* Homuzen: everything below applies only while "mod.homuzen.theme-fixes.enabled" is on. */
+@media -moz-pref("mod.homuzen.theme-fixes.enabled") {
+  :root:root[zen-before-loaded="true"] .zen-browser-generic-background::after {
+    transition: 0s !important;
+  }
+}

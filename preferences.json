@@ -1680,5 +1680,16 @@
     "label": "Enable Sine Mod Search: A search box above the installed mods in Settings → Sine",
     "type": "checkbox",
     "defaultValue": false
+  },
+  {
+    "type": "separator",
+    "id": "homuzen-theme-fixes-section",
+    "label": "Theme fixes"
+  },
+  {
+    "property": "mod.homuzen.theme-fixes.enabled",
+    "label": "Enable Theme fixes: Stop Neo Zen's Color Fixer from fading the window background in over 2 seconds at startup (the rest of the Color Fixer keeps working)",
+    "type": "checkbox",
+    "defaultValue": false
   }
 ]

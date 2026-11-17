@@ -5,8 +5,8 @@
   update    check every mod's upstream source; with --write, pull newer copies into this repo
   apply     install this repo's theme into a Zen profile (Zen must be closed); backs up first
   status    show how the profile differs from this repo
-  install-tweaks   install the Zen Theme Tweaks mod (tweaks/) and fix moved mod sources;
-                   safe while Zen is running
+  install-homuzen  install Homuzen (Homura's own mod: the homuzen repo root around theme/)
+                   and fix moved mod sources; safe while Zen is running
 
 The repo holds: profile/ (LEPTON chrome CSS, user.js), mods/<id>/ (vendored Sine mods),
 mods.json (Sine's mod list: source, version, enabled), prefs/theme-prefs.js (theme and mod
@@ -23,11 +23,20 @@ ZEN_ROOTS = [Path.home() / ".var/app/app.zen_browser.zen/.zen", Path.home() / ".
 # which Sine's own installer manages).
 CHROME_FILES = ["userChrome.css", "userContent.css", "LEPTON", "CREDITS", "LICENSE", "icons"]
 SKIP_NAMES = {".git", "node_modules", "__pycache__", ".DS_Store"}
-# The repo's own mod (fixes for clashes between mods). Its source is tweaks/, not mods/.
-TWEAKS_ID = "homu-zen-theme"
-# Earlier ids of the tweaks mod. install-tweaks removes them from a profile so the
-# renamed mod doesn't load twice, keeping their enabled flag.
-OLD_TWEAKS_IDS = ("zen-theme",)
+# Homura's own mod. Its source is the homuzen repo root around theme/, not mods/.
+HOMUZEN_ID = "homuzen"
+HOMUZEN_SRC = REPO.parent
+# Repo-root entries that are not part of the installed mod.
+HOMUZEN_SKIP = {"theme", "tests", "node_modules", "package.json", "package-lock.json",
+                ".gitmodules", ".gitignore", ".mv"}
+# Homura's earlier separate mods, now parts of Homuzen (the theme tweaks mod is its
+# Theme fixes part). A full apply removes them from the profile and turns the matching
+# Homuzen parts on through prefs/theme-prefs.js; capture never brings them back.
+REPLACED_IDS = ("zen-theme", "homu-zen-theme", "tab-state-highlighter", "more-essentials",
+                "modify-url-bar-icons", "sine-mod-search")
+# Homura's mods dropped from the theme; a full apply removes them and capture skips them.
+REMOVED_IDS = ("focus-space",)
+NOT_CAPTURED = set(REPLACED_IDS) | set(REMOVED_IDS)
 # Mod sources that moved; Sine checks the homepage for updates.
 MOVED_OWNERS = {"01-1": "homura-ai"}
 # Mods installed from a homura-ai fork that carries fixes upstream doesn't have yet.
@@ -181,33 +190,54 @@ def fix_homepage(mid: str, h: str) -> str:
     return h
 
 
-def tweaks_entry() -> dict:
-    m = json.loads((REPO / "tweaks/theme.json").read_text())
+def homuzen_entry() -> dict:
+    m = json.loads((HOMUZEN_SRC / "theme.json").read_text())
     m.update({"enabled": True, "no-updates": True})
     return m
 
 
-def install_tweaks(prof: Path) -> list:
-    """Install tweaks/ as a Sine mod and point moved mod sources at their new home.
-    Safe while Zen runs: Sine re-reads mods.json from disk whenever it needs it."""
+def homuzen_names() -> list:
+    return sorted(n.name for n in HOMUZEN_SRC.iterdir()
+                  if n.name not in HOMUZEN_SKIP and n.name not in SKIP_NAMES)
+
+
+def copy_homuzen(dst: Path):
+    if dst.exists():
+        shutil.rmtree(dst)
+    dst.mkdir(parents=True)
+    for name in homuzen_names():
+        copy_any(HOMUZEN_SRC / name, dst / name)
+
+
+def homuzen_equal(dst: Path) -> bool:
+    if not dst.is_dir() or sorted(n.name for n in dst.iterdir() if n.name not in SKIP_NAMES) != homuzen_names():
+        return False
+    return all(trees_equal(HOMUZEN_SRC / n, dst / n) for n in homuzen_names())
+
+
+def install_homuzen(prof: Path, remove_old: bool = False) -> list:
+    """Install Homuzen as a Sine mod and point moved mod sources at their new home.
+    Safe while Zen runs: Sine re-reads mods.json from disk whenever it needs it.
+    With remove_old (full apply only: Zen is closed and the part prefs are written too),
+    also remove the mods Homuzen replaced and the ones dropped from the theme."""
     sm = prof / "chrome/sine-mods"
     mods_file = sm / "mods.json"
     mods = json.loads(mods_file.read_text()) if mods_file.exists() else {}
     notes = []
-    for old in OLD_TWEAKS_IDS:
-        if old in mods:
-            mods.setdefault(TWEAKS_ID, {"enabled": mods[old].get("enabled", True)})
-            del mods[old]
-            notes.append(f"removed old tweaks mod {old} (now {TWEAKS_ID})")
-        if (sm / old).is_dir():
-            shutil.rmtree(sm / old)
-    copy_tree(REPO / "tweaks", sm / TWEAKS_ID)
-    entry = tweaks_entry()
-    if TWEAKS_ID in mods:
-        entry["enabled"] = mods[TWEAKS_ID].get("enabled", True)
+    if remove_old:
+        for old in sorted(NOT_CAPTURED):
+            if old in mods:
+                del mods[old]
+                notes.append(f"removed {old}" + (f" (now part of {HOMUZEN_ID})" if old in REPLACED_IDS else ""))
+            if (sm / old).is_dir():
+                shutil.rmtree(sm / old)
+    copy_homuzen(sm / HOMUZEN_ID)
+    entry = homuzen_entry()
+    if HOMUZEN_ID in mods:
+        entry["enabled"] = mods[HOMUZEN_ID].get("enabled", True)
     else:
-        notes.append(f"installed {TWEAKS_ID}")
-    mods[TWEAKS_ID] = {**mods.get(TWEAKS_ID, {}), **entry}
+        notes.append(f"installed {HOMUZEN_ID}")
+    mods[HOMUZEN_ID] = {**mods.get(HOMUZEN_ID, {}), **entry}
     for mid, m in mods.items():
         new = fix_homepage(mid, m.get("homepage", ""))
         if new != m.get("homepage", ""):
@@ -260,10 +290,10 @@ def cmd_capture(args):
     if (prof / "user.js").exists():
         copy_any(prof / "user.js", REPO / "profile/user.js")
     (REPO / "mods").mkdir(exist_ok=True)
-    for old in OLD_TWEAKS_IDS:
+    for old in NOT_CAPTURED:
         mods.pop(old, None)
     for mid in mods:
-        if mid == TWEAKS_ID:
+        if mid == HOMUZEN_ID:
             continue
         if (sm / mid).is_dir():
             dest = mod_dir(mid)
@@ -281,13 +311,13 @@ def cmd_capture(args):
     for d in [*(REPO / "mods").iterdir(), *(PRIVATE_MODS.iterdir() if PRIVATE_MODS.is_dir() else [])]:
         if not d.is_dir() or d.name.startswith("."):
             continue
-        if d.name not in mods or d.name == TWEAKS_ID:
+        if d.name not in mods or d.name == HOMUZEN_ID:
             shutil.rmtree(d)
             print(f"removed {d.name} (no longer installed)")
     for mid, m in mods.items():
         m["homepage"] = fix_homepage(mid, m.get("homepage", ""))
-    mods[TWEAKS_ID] = {**mods.get(TWEAKS_ID, {}), **tweaks_entry(),
-                       "enabled": mods.get(TWEAKS_ID, {}).get("enabled", True)}
+    mods[HOMUZEN_ID] = {**mods.get(HOMUZEN_ID, {}), **homuzen_entry(),
+                        "enabled": mods.get(HOMUZEN_ID, {}).get("enabled", True)}
     (REPO / "mods.json").write_text(json.dumps(mods, indent=2, ensure_ascii=False) + "\n")
     for mid in sorted(set(before) | set(mods)):
         a, b = before.get(mid, {}).get("version"), mods.get(mid, {}).get("version")
@@ -375,7 +405,7 @@ def cmd_update(args):
     wanted = set(args.mods or mods)
     report, changed = [], False
     for mid, m in mods.items():
-        if mid not in wanted or mid == TWEAKS_ID:
+        if mid not in wanted or mid == HOMUZEN_ID:
             continue
         src = parse_source(m.get("homepage", ""))
         vend = mod_dir(mid)
@@ -474,7 +504,7 @@ def cmd_apply(args):
     live = json.loads(live_file.read_text()) if live_file.exists() else {}
     sm.mkdir(parents=True, exist_ok=True)
     for mid in list(mods):
-        if mid != TWEAKS_ID:
+        if mid != HOMUZEN_ID:
             if not mod_dir(mid).is_dir():
                 # Leave an installed copy and its entry as they are; never list a mod with no folder.
                 if mid in live and (sm / mid).is_dir():
@@ -486,7 +516,8 @@ def cmd_apply(args):
                 continue
             copy_tree(mod_dir(mid), sm / mid)
     (sm / "mods.json").write_text(json.dumps(mods, indent=2, ensure_ascii=False))
-    install_tweaks(prof)
+    for n in install_homuzen(prof, remove_old=True):
+        print(n)
     # Sine rebuilds chrome.css/content.css (the @import list) on startup.
 
     want = read_prefs(REPO / "prefs/theme-prefs.js")
@@ -515,7 +546,7 @@ def apply_mods_only(prof: Path):
     backup = Path.home() / "hold" / f"homu-zen-theme-backup-{stamp}" / "sine-mods"
     changed = []
     for mid, m in repo.items():
-        if mid == TWEAKS_ID:
+        if mid == HOMUZEN_ID:
             continue
         src, dst = mod_dir(mid), sm / mid
         if not src.is_dir():
@@ -535,7 +566,7 @@ def apply_mods_only(prof: Path):
         tmp = sm / "mods.json.tmp"
         tmp.write_text(json.dumps(live, indent=2, ensure_ascii=False))
         os.replace(tmp, sm / "mods.json")
-    notes = install_tweaks(prof)
+    notes = install_homuzen(prof)
     print(f"synced {len(changed)} mods: {', '.join(changed) or 'none'}" + (f"; old copies in {backup}" if changed else ""))
     for n in notes:
         print(n)
@@ -548,7 +579,9 @@ def cmd_status(args):
     live = json.loads((sm / "mods.json").read_text())
     repo = json.loads((REPO / "mods.json").read_text())
     for mid in sorted(set(live) | set(repo)):
-        if mid not in repo:
+        if mid not in repo and mid in NOT_CAPTURED:
+            print(f"- {mid}: installed, removed from the theme (a full apply removes it)")
+        elif mid not in repo:
             print(f"+ {mid}: installed, not in repo (run capture)")
         elif mid not in live:
             print(f"- {mid}: in repo, not installed")
@@ -558,10 +591,12 @@ def cmd_status(args):
                 notes.append(f"enabled {repo[mid].get('enabled')} -> {live[mid].get('enabled')}")
             if live[mid].get("version") != repo[mid].get("version"):
                 notes.append(f"version {repo[mid].get('version')} -> {live[mid].get('version')}")
-            src = REPO / "tweaks" if mid == TWEAKS_ID else mod_dir(mid)
-            if not src.is_dir():
+            if mid == HOMUZEN_ID:
+                if not homuzen_equal(sm / mid):
+                    notes.append("files differ")
+            elif not mod_dir(mid).is_dir():
                 notes.append("no copy in repo (submodule not checked out)")
-            elif not trees_equal(src, sm / mid):
+            elif not trees_equal(mod_dir(mid), sm / mid):
                 notes.append("files differ")
             if notes:
                 print(f"~ {mid}: " + ", ".join(notes))
@@ -590,12 +625,12 @@ def main():
     a.add_argument("--mods-only", action="store_true",
                    help="only sync mod folders and mods.json (safe while Zen runs; no CSS, prefs or backup of prefs)")
     sub.add_parser("status", help="show how the profile differs from this repo")
-    sub.add_parser("install-tweaks", help="install tweaks/ and fix moved mod sources (safe while Zen runs)")
+    sub.add_parser("install-homuzen", help="install Homuzen and fix moved mod sources (safe while Zen runs)")
     args = ap.parse_args()
     if args.cmd != "update":
         args.profile = (args.profile or default_profile()).resolve()
     {"capture": cmd_capture, "update": cmd_update, "apply": cmd_apply, "status": cmd_status,
-     "install-tweaks": lambda a: print("\n".join(install_tweaks(a.profile)) or "already up to date"),
+     "install-homuzen": lambda a: print("\n".join(install_homuzen(a.profile)) or "already up to date"),
      }[args.cmd](args)
 
 
