@@ -20,7 +20,7 @@ The parts were separate mods (homura-ai/tab-state-highlighter, more-essentials, 
 3. Open Homuzen's settings and turn on the parts you want.
 4. If the standalone mods are installed, remove them so they don't run twice.
 
-The theme setup is in [`theme/`](theme/README.md): copies of the other authors' mods, theme settings, and the tool that applies them to a Zen profile. It installs Homuzen from this repo and turns its parts on. Its private mods are a submodule, so clone with `git clone --recurse-submodules`, or run `git submodule update --init` in an existing clone. Sine installs only the mod and does not use `theme/`.
+The theme setup is in [`theme/`](theme/README.md): copies of the other authors' mods, theme settings, and the tool that applies them to a Zen profile. A full apply installs Homuzen from this repo and enables Tab State Highlighter, More Essentials, Modify URL Bar Icons, Sine Mod Search and Theme fixes with the checked-in preferences; Middle-click unload stays off unless you enable it. Its private mods are an optional submodule: if you have access, clone with `git clone --recurse-submodules`, or run `git submodule update --init` in an existing clone. Sine installs only the mod and does not use `theme/`.
 
 ## Middle-click unload
 
