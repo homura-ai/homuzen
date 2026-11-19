@@ -16,7 +16,7 @@ Homura's Zen Browser tweaks as one [Sine](https://github.com/CosmoCreeper/Sine) 
 1. In Zen, open **Settings → Sine Mods**, enter `homura-ai/homuzen` in **or, add your own locally from a GitHub repo** and click **Install**. If Sine blocks it, click the gear next to **Install**, tick **Enable installing JS from unofficial sources** and try again.
 2. Open Homuzen's settings and turn on the parts you want.
 
-The theme setup is in [`theme/`](theme/README.md): copies of the other authors' mods, theme settings, and the tool that applies them to a Zen profile. It installs Homuzen from this repo and turns its parts on. Its private mods are a submodule, so clone with `git clone --recurse-submodules`, or run `git submodule update --init` in an existing clone. Sine installs only the mod and does not use `theme/`.
+The theme setup is in [`theme/`](theme/README.md): copies of the other authors' mods, theme settings, and the tool that applies them to a Zen profile. It installs Homuzen from this repo and turns its parts on. Clone with `git clone https://github.com/homura-ai/homuzen.git`. The private mods are an optional submodule. From the clone, run `git submodule update --init` if you have access to the private mods. `apply` skips missing private mods. Sine installs only the mod and does not use `theme/`.
 
 ## Middle-click unload
 
