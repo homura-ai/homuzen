@@ -30,7 +30,7 @@ Placements are stored by Firefox's customization state, so they survive restarts
 
 ## Turn it on
 
-This is one part of [Homuzen](../README.md). Install Homuzen, then turn on **Enable Modify URL Bar Icons** in **Settings → Sine Mods → Homuzen**. Its settings appear under that checkbox and keep their `mod.modify-url-bar-icons.*` preference names, so settings from the standalone mod carry over.
+This is one part of [Homuzen](../README.md). Install Homuzen, then turn on **Enable Modify URL Bar Icons** in **Settings → Sine Mods → Homuzen**. Its settings appear under that checkbox.
 
 ## Implementation and compatibility
 

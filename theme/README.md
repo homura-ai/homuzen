@@ -14,7 +14,7 @@ The `theme/` folder of [homuzen](../README.md): Homura's Zen Browser theme, kept
 | `profile/user.js` | LEPTON's user.js (theme switches plus privacy defaults). |
 | `homu-zen-theme` | The tool (Python 3, no dependencies). |
 
-To install Homuzen, open Zen **Settings → Sine Mods**, enter `homura-ai/homuzen` in **or, add your own locally from a GitHub repo** and click **Install**. If Sine blocks it, click the gear next to **Install** and tick **Enable installing JS from unofficial sources** first. Then remove the standalone mods it replaced (tab-state-highlighter, more-essentials, modify-url-bar-icons, sine-mod-search) so they don't run twice.
+To install Homuzen, open Zen **Settings → Sine Mods**, enter `homura-ai/homuzen` in **or, add your own locally from a GitHub repo** and click **Install**. If Sine blocks it, click the gear next to **Install** and tick **Enable installing JS from unofficial sources** first.
 
 ## Use
 

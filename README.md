@@ -11,13 +11,10 @@ Homura's Zen Browser tweaks as one [Sine](https://github.com/CosmoCreeper/Sine) 
 | [Sine Mod Search](sine-mod-search/README.md) | A search box above the installed mods in Settings → Sine Mods | `mod.homuzen.sine-mod-search.enabled` |
 | Theme fixes | Fixes for clashes between the mods in Homura's theme | `mod.homuzen.theme-fixes.enabled` |
 
-The parts were separate mods (homura-ai/tab-state-highlighter, more-essentials, modify-url-bar-icons, sine-mod-search, and Homu Zen Theme Tweaks from homura-ai/homu-zen-theme); their full git history is kept here. Each part keeps its old preference names (`mod.tab-state-highlighter.*` and so on), so settings made with the standalone mods carry over.
-
 ## Install
 
 1. In Zen, open **Settings → Sine Mods**, enter `homura-ai/homuzen` in **or, add your own locally from a GitHub repo** and click **Install**. If Sine blocks it, click the gear next to **Install**, tick **Enable installing JS from unofficial sources** and try again.
 2. Open Homuzen's settings and turn on the parts you want.
-3. If the standalone mods are installed, remove them so they don't run twice.
 
 The theme setup is in [`theme/`](theme/README.md): copies of the other authors' mods, theme settings, and the tool that applies them to a Zen profile. It installs Homuzen from this repo and turns its parts on. Its private mods are a submodule, so clone with `git clone --recurse-submodules`, or run `git submodule update --init` in an existing clone. Sine installs only the mod and does not use `theme/`.
 

@@ -10,7 +10,7 @@ A configurable Sine CSS mod for Zen Browser that gives loaded and unloaded tabs 
 
 ## Turn it on
 
-This is one part of [Homuzen](../README.md). Install Homuzen, then turn on **Enable Tab State Highlighter** in **Settings → Sine Mods → Homuzen**. Its settings appear under that checkbox and keep their `mod.tab-state-highlighter.*` preference names, so settings from the standalone mod carry over.
+This is one part of [Homuzen](../README.md). Install Homuzen, then turn on **Enable Tab State Highlighter** in **Settings → Sine Mods → Homuzen**. Its settings appear under that checkbox.
 
 ## Settings
 
