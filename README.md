@@ -11,16 +11,12 @@ Homura's Zen Browser tweaks as one [Sine](https://github.com/CosmoCreeper/Sine) 
 | [Sine Mod Search](sine-mod-search/README.md) | A search box above the installed mods in Settings → Sine Mods | `mod.homuzen.sine-mod-search.enabled` |
 | Theme fixes | Fixes for clashes between the mods in Homura's theme | `mod.homuzen.theme-fixes.enabled` |
 
-The parts were separate mods (homura-ai/tab-state-highlighter, more-essentials, modify-url-bar-icons, sine-mod-search, and Homu Zen Theme Tweaks from homura-ai/homu-zen-theme); their full git history is kept here. Each part keeps its old preference names (`mod.tab-state-highlighter.*` and so on), so settings made with the standalone mods carry over.
-
 ## Install
 
-1. In Zen, open **Settings → Sine Mods** and enter `https://github.com/homura-ai/homuzen` in the custom GitHub repository installer.
-2. Allow JavaScript from unofficial sources in Sine if it asks (`sine.allow-unsafe-js`).
-3. Open Homuzen's settings and turn on the parts you want.
-4. If the standalone mods are installed, remove them so they don't run twice.
+1. In Zen, open **Settings → Sine Mods**, enter `homura-ai/homuzen` in **or, add your own locally from a GitHub repo** and click **Install**. If Sine blocks it, click the gear next to **Install**, tick **Enable installing JS from unofficial sources** and try again.
+2. Open Homuzen's settings and turn on the parts you want.
 
-The theme setup is in [`theme/`](theme/README.md): copies of the other authors' mods, theme settings, and the tool that applies them to a Zen profile. A full apply installs Homuzen from this repo and enables Tab State Highlighter, More Essentials, Modify URL Bar Icons, Sine Mod Search and Theme fixes with the checked-in preferences; Middle-click unload stays off unless you enable it. Its private mods are an optional submodule: if you have access, clone with `git clone --recurse-submodules`, or run `git submodule update --init` in an existing clone. Sine installs only the mod and does not use `theme/`.
+Sine installs the Homuzen mod. To apply Homura's full theme, clone with `git clone https://github.com/homura-ai/homuzen.git` and follow the [theme setup](theme/README.md). From the clone, run `git submodule update --init` if you have access to the optional private mods. A full `apply` skips missing mods and installs Homuzen with Tab State Highlighter, More Essentials, Modify URL Bar Icons, Sine Mod Search and Theme fixes enabled. Middle-click unload stays off until you enable it.
 
 ## Middle-click unload
 
@@ -37,7 +33,7 @@ The script listens for middle clicks on the tab strip in the capture phase, so i
 
 ## Theme fixes
 
-- **Startup background wipe.** At startup Zen fades from a plain background to the workspace gradient. Neo Zen's Color Fixer forces a 2 s transition on that layer, so it plays as a red diagonal gradient with a purple column sweeping in from the left, and the UI appears about 2 s late. This part restores Zen's own instant transition only while Zen is still starting up (`zen-before-loaded`). Workspace switches afterwards keep Neo Zen's smooth transition, and the rest of the Color Fixer keeps working. Checked on 2026-11-16 by recording startups of a copy of the profile in both states.
+- **Startup background wipe.** At startup Zen fades from a plain background to the workspace gradient. Neo Zen's Color Fixer forces a 2 s transition on that layer, so it plays as a red diagonal gradient with a purple column sweeping in from the left, and the UI appears about 2 s late. This part restores Zen's own instant transition only while Zen is still starting up (`zen-before-loaded`). Workspace switches afterwards keep Neo Zen's smooth transition, and the rest of the Color Fixer keeps working.
 
 ## Layout
 

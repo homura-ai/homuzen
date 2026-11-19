@@ -10,7 +10,7 @@ A configurable Sine CSS mod for Zen Browser that gives loaded and unloaded tabs 
 
 ## Turn it on
 
-This is one part of [Homuzen](../README.md). Install Homuzen, then turn on **Enable Tab State Highlighter** in **Settings → Sine Mods → Homuzen**. Its settings appear under that checkbox and keep their `mod.tab-state-highlighter.*` preference names, so settings from the standalone mod carry over.
+This is one part of [Homuzen](../README.md). Install Homuzen, then turn on **Enable Tab State Highlighter** in **Settings → Sine Mods → Homuzen**. Its settings appear under that checkbox.
 
 ## Settings
 
@@ -84,10 +84,6 @@ It does not set the tab element's opacity, visibility, or display, or change `.t
 Whole-tab glows use a separate `.tab-stack::after` layer, leaving the `.tab-background` pseudo-elements used by Neo Zen and Arc container colors and close-button effects intact. The glow uses Zen's `--tab-border-radius` and ignores pointer events.
 
 Settings use Firefox `-moz-pref()` media queries. Numeric and custom-color settings use Sine's generated `--mod-*` custom properties.
-
-### Checked versions
-
-Checked on 2026-11-16 with Zen **1.24.2b** and Sine **2.3.4.1c**, using a copy of a profile with **Neo Zen 1.21.3-neo.1** and **Arc 2.0 3.4** enabled. Computed-style checks cover all seven effects on loaded and unloaded Essentials, pinned tabs, and regular tabs; effect copying, fading scopes, selected-tab hiding, glow strength above 100, compact mode, and live preference updates in two windows. Actual automatic and explicit unload operations confirm the `[pending]` and `[discarded]` states.
 
 Zen still marks Essentials with `[zen-essential="true"]` inside `.zen-essentials-container`; loaded tabs lack `[pending]`. The mod selects the tab attribute, so it does not depend on a particular container ID. The relevant upstream source is [ZenPinnedTabManager.mjs at 1.24.2b](https://github.com/zen-browser/desktop/blob/1.24.2b/src/zen/tabs/ZenPinnedTabManager.mjs).
 

@@ -24,10 +24,6 @@ This is one part of [Homuzen](../README.md). Install Homuzen, then turn on **Ena
 
 Targets Sine's `#sineModsList` / `.sineItem[mod-id]` settings UI and local mod
 metadata API, checked against [Sine source](https://github.com/CosmoCreeper/Sine/tree/fb0bd4ca6af888f10648e126947f7d1f82228433/src).
-Verified on Zen **1.24.2b** with Sine/Cosine **2.3.4.1c** on 2026-11-16,
-using a temporary copy of an installed profile. Name, settings-label, preference-key,
-and disabled-mod settings searches worked across 29 mod cards. Card and Configure
-popup highlights, native popup controls, and Escape clearing also passed.
 Works in `about:preferences` and `about:settings`, waiting for Sine's asynchronously
 created UI. Sine/Cosine versions that change these internal APIs may need an update.
 The search reindexes when Sine rebuilds the installed list or the settings window
@@ -49,9 +45,3 @@ Live smoke test after installation:
 5. Install/remove another mod with the search active and verify the results refresh.
 6. Disable this mod and verify all cards reappear and the search field disappears.
 7. Repeat in a second settings tab and after a browser restart.
-
-For each later publication, increase `version` and set `updatedAt` strictly later
-than the published timestamp (use an ISO timestamp for same-day updates). Test
-with the old version installed: Sine must discover the newer `updatedAt` at
-`homepage`, download the changed script, and apply it. This installed update path
-still needs verification with an installed release in a live Zen profile.
