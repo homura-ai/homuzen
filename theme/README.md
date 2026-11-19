@@ -1,6 +1,6 @@
 # Homu Zen Theme
 
-The `theme/` folder of [Homuzen](../README.md) keeps the Zen Browser theme in sync across machines.
+The `theme/` folder of [homuzen](../README.md): Homura's Zen Browser theme, kept as code so any machine (pbox, omen, the next laptop) can get the same look and stay in sync.
 
 ## What's here
 
@@ -14,9 +14,9 @@ The `theme/` folder of [Homuzen](../README.md) keeps the Zen Browser theme in sy
 | `profile/user.js` | LEPTON's user.js (theme switches plus privacy defaults). |
 | `homu-zen-theme` | The tool (Python 3, no dependencies). |
 
-The tool installs the Homuzen mod from the repo root (everything except `theme/`, `tests/` and the npm files), and `prefs/theme-prefs.js` turns on its parts. Every other mod here is someone else's. Neo Zen is installed from the homura-ai/Neo-Zen fork, which carries a settings fix that upstream lacks.
+Homura's own mod is Homuzen, the repo around this folder. The tool installs it from the repo root (everything except `theme/`, `tests/` and the npm files), and `prefs/theme-prefs.js` turns on its parts. Every other mod here is someone else's. Neo Zen is installed from the homura-ai/Neo-Zen fork, which carries a settings fix that upstream lacks.
 
-Homuzen replaced the standalone mods (tab-state-highlighter, more-essentials, modify-url-bar-icons, sine-mod-search) and Homu Zen Theme Tweaks (now its Theme fixes part). Focus Space is no longer part of the theme. A full `apply` removes all of these from a profile, and `capture` never brings them back; `apply --mods-only` and `install-homuzen` leave them installed, because the Homuzen parts that replace them are turned on through prefs, which can only be written while Zen is closed.
+Homuzen replaced Homura's standalone mods (tab-state-highlighter, more-essentials, modify-url-bar-icons, sine-mod-search) and Homu Zen Theme Tweaks (now its Theme fixes part). Focus Space is no longer part of the theme. A full `apply` removes all of these from a profile, and `capture` never brings them back; `apply --mods-only` and `install-homuzen` leave them installed, because the Homuzen parts that replace them are turned on through prefs, which can only be written while Zen is closed.
 
 ## Use
 
@@ -41,4 +41,4 @@ cd ~/code/zen/homuzen/theme
 
 ## License
 
-The theme's original files are all rights reserved. See [LICENSE](LICENSE) for how to ask for an exception. Each mod under `mods/` and the LEPTON files in `profile/chrome/` belong to their authors and keep their own licenses (MIT, Apache-2.0, GPL-3.0 or MPL-2.0; see the LICENSE file in each folder).
+Homura's own files here are all rights reserved; see [LICENSE](LICENSE) for how to ask for an exception. Each mod under `mods/` and the LEPTON files in `profile/chrome/` belong to their authors and keep their own licenses (MIT, Apache-2.0, GPL-3.0 or MPL-2.0; see the LICENSE file in each folder).

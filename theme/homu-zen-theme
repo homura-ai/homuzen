@@ -1,11 +1,11 @@
 #!/usr/bin/env -S python3 -I
-"""homu-zen-theme: Manage a Zen Browser theme as code.
+"""homu-zen-theme: Homura's Zen Browser theme as code.
 
   capture   copy the theme from a Zen profile into this repo
   update    check every mod's upstream source; with --write, pull newer copies into this repo
   apply     install this repo's theme into a Zen profile (Zen must be closed); backs up first
   status    show how the profile differs from this repo
-  install-homuzen  install Homuzen from the repository root
+  install-homuzen  install Homuzen (Homura's own mod: the homuzen repo root around theme/)
                    and fix moved mod sources; safe while Zen is running
 
 The repo holds: profile/ (LEPTON chrome CSS, user.js), mods/<id>/ (vendored Sine mods),
@@ -23,18 +23,18 @@ ZEN_ROOTS = [Path.home() / ".var/app/app.zen_browser.zen/.zen", Path.home() / ".
 # which Sine's own installer manages).
 CHROME_FILES = ["userChrome.css", "userContent.css", "LEPTON", "CREDITS", "LICENSE", "icons"]
 SKIP_NAMES = {".git", "node_modules", "__pycache__", ".DS_Store"}
-# Homuzen's source is the repository root around theme/.
+# Homura's own mod. Its source is the homuzen repo root around theme/, not mods/.
 HOMUZEN_ID = "homuzen"
 HOMUZEN_SRC = REPO.parent
 # Repo-root entries that are not part of the installed mod.
 HOMUZEN_SKIP = {"theme", "tests", "node_modules", "package.json", "package-lock.json",
                 ".gitmodules", ".gitignore", ".mv"}
-# Standalone mods now included in Homuzen (the theme tweaks mod is its
+# Homura's earlier separate mods, now parts of Homuzen (the theme tweaks mod is its
 # Theme fixes part). A full apply removes them from the profile and turns the matching
 # Homuzen parts on through prefs/theme-prefs.js; capture never brings them back.
 REPLACED_IDS = ("zen-theme", "homu-zen-theme", "tab-state-highlighter", "more-essentials",
                 "modify-url-bar-icons", "sine-mod-search")
-# A full apply removes these dropped mods, and capture skips them.
+# Homura's mods dropped from the theme; a full apply removes them and capture skips them.
 REMOVED_IDS = ("focus-space",)
 NOT_CAPTURED = set(REPLACED_IDS) | set(REMOVED_IDS)
 # Mod sources that moved; Sine checks the homepage for updates.
@@ -585,7 +585,7 @@ def apply_mods_only(prof: Path):
         if dst.exists():
             copy_tree(dst, backup / mid)
         copy_tree(src, dst)
-        # Keep the live enabled flag, which may have changed since the last capture.
+        # Keep the live enabled flag: Homura may have toggled a mod since the last capture.
         live[mid] = {**m, "enabled": live.get(mid, m).get("enabled", m.get("enabled"))}
         changed.append(mid)
     if changed:

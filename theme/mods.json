@@ -835,7 +835,7 @@
   "homuzen": {
     "id": "homuzen",
     "name": "Homuzen",
-    "description": "Zen Browser tweaks in one mod, each off until you turn it on: Tab State Highlighter, middle-click unload for regular tabs, More Essentials, Modify URL Bar Icons, Sine Mod Search and fixes for clashes between the mods in the bundled theme.",
+    "description": "Homura's Zen tweaks in one mod, each off until you turn it on: Tab State Highlighter, middle-click unload for regular tabs, More Essentials, Modify URL Bar Icons, Sine Mod Search and fixes for clashes between the mods in Homura's theme.",
     "homepage": "https://github.com/homura-ai/homuzen",
     "readme": "https://raw.githubusercontent.com/homura-ai/homuzen/main/README.md",
     "image": "https://raw.githubusercontent.com/homura-ai/homuzen/main/sine-mod-search/screenshot.png",

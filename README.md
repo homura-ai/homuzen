@@ -1,6 +1,6 @@
 # Homuzen
 
-Zen Browser tweaks as one [Sine](https://github.com/CosmoCreeper/Sine) mod, plus the theme setup they are used with ([`theme/`](theme/README.md)). The mod has six parts, and **every part is off until you turn it on** in **Settings → Sine Mods → Homuzen**. A part's own settings appear under its checkbox once it is on, and turning a part off undoes it at once, with no restart.
+Homura's Zen Browser tweaks as one [Sine](https://github.com/CosmoCreeper/Sine) mod, plus the theme setup they are used with ([`theme/`](theme/README.md)). The mod has six parts, and **every part is off until you turn it on** in **Settings → Sine Mods → Homuzen**. A part's own settings appear under its checkbox once it is on, and turning a part off undoes it at once, with no restart.
 
 | Part | What it does | Turn on with |
 | --- | --- | --- |
@@ -9,7 +9,7 @@ Zen Browser tweaks as one [Sine](https://github.com/CosmoCreeper/Sine) mod, plus
 | [More Essentials](more-essentials/README.md) | Raise Zen's Essentials cap to infinite or a custom number | `mod.homuzen.more-essentials.enabled` |
 | [Modify URL Bar Icons](modify-url-bar-icons/README.md) | Move URL bar icons into any toolbar with Customize Toolbar drag and drop | `mod.homuzen.modify-url-bar-icons.enabled` |
 | [Sine Mod Search](sine-mod-search/README.md) | A search box above the installed mods in Settings → Sine Mods | `mod.homuzen.sine-mod-search.enabled` |
-| Theme fixes | Fixes for clashes between the mods in the bundled theme | `mod.homuzen.theme-fixes.enabled` |
+| Theme fixes | Fixes for clashes between the mods in Homura's theme | `mod.homuzen.theme-fixes.enabled` |
 
 The parts were separate mods (homura-ai/tab-state-highlighter, more-essentials, modify-url-bar-icons, sine-mod-search, and Homu Zen Theme Tweaks from homura-ai/homu-zen-theme); their full git history is kept here. Each part keeps its old preference names (`mod.tab-state-highlighter.*` and so on), so settings made with the standalone mods carry over.
 
