@@ -14,9 +14,7 @@ The `theme/` folder of [homuzen](../README.md): Homura's Zen Browser theme, kept
 | `profile/user.js` | LEPTON's user.js (theme switches plus privacy defaults). |
 | `homu-zen-theme` | The tool (Python 3, no dependencies). |
 
-Homura's own mod is Homuzen, the repo around this folder. The tool installs it from the repo root (everything except `theme/`, `tests/` and the npm files), and `prefs/theme-prefs.js` turns on its parts. Every other mod here is someone else's. Neo Zen is installed from the homura-ai/Neo-Zen fork, which carries a settings fix that upstream lacks.
-
-Homuzen replaced Homura's standalone mods (tab-state-highlighter, more-essentials, modify-url-bar-icons, sine-mod-search) and Homu Zen Theme Tweaks (now its Theme fixes part). Focus Space is no longer part of the theme. A full `apply` removes all of these from a profile, and `capture` never brings them back; `apply --mods-only` and `install-homuzen` leave them installed, because the Homuzen parts that replace them are turned on through prefs, which can only be written while Zen is closed.
+To install Homuzen, open Zen **Settings → Sine Mods**, enter `homura-ai/homuzen` in **or, add your own locally from a GitHub repo** and click **Install**. If Sine blocks it, click the gear next to **Install** and tick **Enable installing JS from unofficial sources** first. Then remove the standalone mods it replaced (tab-state-highlighter, more-essentials, modify-url-bar-icons, sine-mod-search) so they don't run twice.
 
 ## Use
 

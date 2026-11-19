@@ -15,10 +15,9 @@ The parts were separate mods (homura-ai/tab-state-highlighter, more-essentials, 
 
 ## Install
 
-1. In Zen, open **Settings → Sine Mods** and enter `https://github.com/homura-ai/homuzen` in the custom GitHub repository installer.
-2. Allow JavaScript from unofficial sources in Sine if it asks (`sine.allow-unsafe-js`).
-3. Open Homuzen's settings and turn on the parts you want.
-4. If the standalone mods are installed, remove them so they don't run twice.
+1. In Zen, open **Settings → Sine Mods**, enter `homura-ai/homuzen` in **or, add your own locally from a GitHub repo** and click **Install**. If Sine blocks it, click the gear next to **Install**, tick **Enable installing JS from unofficial sources** and try again.
+2. Open Homuzen's settings and turn on the parts you want.
+3. If the standalone mods are installed, remove them so they don't run twice.
 
 The theme setup is in [`theme/`](theme/README.md): copies of the other authors' mods, theme settings, and the tool that applies them to a Zen profile. It installs Homuzen from this repo and turns its parts on. Its private mods are a submodule, so clone with `git clone --recurse-submodules`, or run `git submodule update --init` in an existing clone. Sine installs only the mod and does not use `theme/`.
 
