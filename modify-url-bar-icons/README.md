@@ -40,8 +40,6 @@ Widget registrations are global while Sine runs the script per window, so the wi
 
 `chrome.css` sizes moved icons like toolbar buttons, collapses slots whose icon Firefox has hidden, shows a stand-in icon while customizing, and lifts the Zen rules that hide icons inside the URL bar.
 
-Verified on Linux with Zen **1.24.2b** (Firefox 160) and Sine **2.3.4.1c** on 2026-11-16, using a headless copy of the installed profile. All ten default Linux icons were dragged through Customize Toolbar into the sidebar top, sidebar foot and navigation bar, then back to the palette; each returned to its original position. The moved bookmark star also reached the browser's delegated click handler. Drag events used Firefox's `browser.uiCustomization.skipSourceNodeCheck` testing preference in the copied profile. Platform-specific and pref-gated icons were checked in the installed markup, but their feature behavior was not exercised.
-
 Because this touches browser internals (`CustomizableUI`, `BrowserPageActions`, the URL bar markup), future Zen or Firefox changes may require an update. Automated tests cover relocation, restoration, extension page actions, multiple windows and unload with a browser-API mock.
 
 ## Verify

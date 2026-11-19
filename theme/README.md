@@ -16,6 +16,8 @@ The `theme/` folder of [homuzen](../README.md): Homura's Zen Browser theme, kept
 
 To install Homuzen, open Zen **Settings → Sine Mods**, enter `homura-ai/homuzen` in **or, add your own locally from a GitHub repo** and click **Install**. If Sine blocks it, click the gear next to **Install** and tick **Enable installing JS from unofficial sources** first.
 
+A full theme apply installs Homuzen from the repo root. `prefs/theme-prefs.js` turns on Tab State Highlighter, More Essentials, Modify URL Bar Icons, Sine Mod Search and Theme fixes. Middle-click unload stays off until you enable it. The theme uses the `homura-ai/Neo-Zen` fork, which includes a settings fix.
+
 ## Use
 
 Run these commands from the `theme/` directory in your clone.
@@ -32,9 +34,11 @@ Run these commands from the `theme/` directory in your clone.
 ./homu-zen-theme install-homuzen        # install/refresh Homuzen from the repo root (safe while Zen runs)
 ```
 
-`capture` makes the repo match the profile, so apply the repo's updates first (`apply --mods-only`) or capture will revert them; it lists every mod version it changes. `apply` backs up what it replaces to `~/hold/homu-zen-theme-backup-<time>/`. `--profile <dir>` picks another profile; the default is the one Zen starts with.
+`capture` makes the repo match the profile, so apply the repo's updates first (`apply --mods-only`) or capture will revert them; it lists every mod version it changes. `apply` backs up what it replaces to `~/hold/homu-zen-theme-backup-<time>/`. `--profile <dir>` before the subcommand picks another profile (for example, `./homu-zen-theme --profile /path/to/profile status`); the default is the one Zen starts with.
 
-**New machine:** install Zen, install Sine (github.com/CosmoCreeper/Sine), start Zen once and close it, then clone homuzen with `git clone https://github.com/homura-ai/homuzen.git`. From the clone, run `git submodule update --init` if you have access to the private mods, then run `theme/homu-zen-theme apply`. Without private-repository access, skip the submodule step. `apply` skips missing mods, which you can install through Sine from their homepages in `mods.json`.
+Homuzen installed by this tool has Sine updates disabled (`no-updates: true`), and `update` skips it. Pull the latest homuzen checkout, then run `./homu-zen-theme install-homuzen` or `apply --mods-only` to refresh its files; start Zen again to load them.
+
+**On a new machine**, install Zen and [Sine](https://github.com/CosmoCreeper/Sine), start Zen once and close it, then clone Homuzen with `git clone https://github.com/homura-ai/homuzen.git`. From the clone, run `git submodule update --init` if you have access to the optional private mods, then run `theme/homu-zen-theme apply`. `apply` skips unavailable mods. You can install them through Sine from their homepages in `mods.json`.
 
 **Undo an update:** `git revert <commit>` then `./homu-zen-theme apply --mods-only` (or `apply` with Zen closed).
 

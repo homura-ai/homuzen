@@ -16,7 +16,7 @@ Homura's Zen Browser tweaks as one [Sine](https://github.com/CosmoCreeper/Sine) 
 1. In Zen, open **Settings → Sine Mods**, enter `homura-ai/homuzen` in **or, add your own locally from a GitHub repo** and click **Install**. If Sine blocks it, click the gear next to **Install**, tick **Enable installing JS from unofficial sources** and try again.
 2. Open Homuzen's settings and turn on the parts you want.
 
-The theme setup is in [`theme/`](theme/README.md): copies of the other authors' mods, theme settings, and the tool that applies them to a Zen profile. It installs Homuzen from this repo and turns its parts on. Clone with `git clone https://github.com/homura-ai/homuzen.git`. The private mods are an optional submodule. From the clone, run `git submodule update --init` if you have access to the private mods. `apply` skips missing private mods. Sine installs only the mod and does not use `theme/`.
+Sine installs the Homuzen mod. To apply Homura's full theme, clone with `git clone https://github.com/homura-ai/homuzen.git` and follow the [theme setup](theme/README.md). From the clone, run `git submodule update --init` if you have access to the optional private mods. A full `apply` skips missing mods and installs Homuzen with Tab State Highlighter, More Essentials, Modify URL Bar Icons, Sine Mod Search and Theme fixes enabled. Middle-click unload stays off until you enable it.
 
 ## Middle-click unload
 
@@ -33,7 +33,7 @@ The script listens for middle clicks on the tab strip in the capture phase, so i
 
 ## Theme fixes
 
-- **Startup background wipe.** At startup Zen fades from a plain background to the workspace gradient. Neo Zen's Color Fixer forces a 2 s transition on that layer, so it plays as a red diagonal gradient with a purple column sweeping in from the left, and the UI appears about 2 s late. This part restores Zen's own instant transition only while Zen is still starting up (`zen-before-loaded`). Workspace switches afterwards keep Neo Zen's smooth transition, and the rest of the Color Fixer keeps working. Checked on 2026-11-16 by recording startups of a copy of the profile in both states.
+- **Startup background wipe.** At startup Zen fades from a plain background to the workspace gradient. Neo Zen's Color Fixer forces a 2 s transition on that layer, so it plays as a red diagonal gradient with a purple column sweeping in from the left, and the UI appears about 2 s late. This part restores Zen's own instant transition only while Zen is still starting up (`zen-before-loaded`). Workspace switches afterwards keep Neo Zen's smooth transition, and the rest of the Color Fixer keeps working.
 
 ## Layout
 
