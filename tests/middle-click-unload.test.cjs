@@ -77,9 +77,9 @@ function browser({ enabled = true, blocked = false } = {}) {
   run();
   // A click as the tab strip's capture listener sees it. Returns whether the
   // event was left for Firefox's own middle-click close.
-  const click = async (tab, button = 1) => {
+  const click = async (tab, button = 1, shiftKey = false) => {
     let stopped = false;
-    const event = { button, target: tab, stopPropagation() { stopped = true; }, preventDefault() {} };
+    const event = { button, shiftKey, target: tab, stopPropagation() { stopped = true; }, preventDefault() {} };
     gBrowser.tabContainer.handler?.(event);
     await new Promise((resolve) => setImmediate(resolve));
     return !stopped;
@@ -109,6 +109,13 @@ test('middle-clicking an unloaded regular tab leaves Firefox to close it', async
   // The second middle click on a tab this part just unloaded closes it.
   await b.click(b.tabs.loaded);
   assert.equal(await b.click(b.tabs.loaded), true);
+});
+
+test('Shift+middle-click lets Zen close regular tabs and closes pinned tabs without unloading', async () => {
+  const b = browser();
+  assert.equal(await b.click(b.tabs.loaded, 1, true), true);
+  assert.equal(await b.click(b.tabs.pinned, 1, true), false);
+  assert.deepEqual(b.log, ['close pinned']);
 });
 
 test('a tab Firefox will not unload is closed, but a kept beforeunload page stays open', async () => {

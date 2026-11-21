@@ -1547,7 +1547,7 @@
   },
   {
     "property": "mod.homuzen.middle-click-unload.enabled",
-    "label": "Enable Middle-click unload: Middle-click a regular tab to unload it, and middle-click an unloaded tab to close it, the way Zen already treats pinned tabs",
+    "label": "Enable Middle-click unload: Middle-click a regular tab to unload it or close it if unloaded. Shift+middle-click closes a tab directly",
     "type": "checkbox",
     "defaultValue": false
   },

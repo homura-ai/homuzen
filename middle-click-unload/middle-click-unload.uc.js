@@ -42,12 +42,22 @@
     };
 
     // Capture phase on the tab strip runs before Firefox's own middle-click
-    // close (bubbling phase on the same element). Pinned tabs, multiselected
-    // tabs and clicks outside a tab keep their native behavior.
+    // close (bubbling phase on the same element).
     const onClick = (event) => {
       if (event.button !== 1 || destroyed) return;
       const tab = event.target?.closest?.("tab");
-      if (!tab || tab.pinned || tab.multiselected) return;
+      if (!tab) return;
+      if (event.shiftKey) {
+        // Regular tabs reach the native close handler. Zen's pinned-tab
+        // listener would unload first, so close those directly.
+        if (!tab.pinned) return;
+        event.stopPropagation();
+        event.preventDefault();
+        if (tab.multiselected) window.gBrowser.removeMultiSelectedTabs();
+        else window.gBrowser.removeTab(tab, { animate: true, triggeringEvent: event });
+        return;
+      }
+      if (tab.pinned || tab.multiselected) return;
       const tabs = tabsFor(tab);
       if (!tabs.length) return;
       // Already unloaded: let Firefox close it as usual.
