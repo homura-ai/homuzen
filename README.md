@@ -22,12 +22,13 @@ Sine installs the Homuzen mod. To apply Homura's full theme, clone with `git clo
 
 Zen already gives pinned tabs this behavior (`zen.pinned-tab-manager.wheel-close-if-pending`). This part does the same for regular tabs:
 
+- **Shift+middle-click:** close a tab normally, skipping the unload step. This works on regular tabs, pinned tabs and Essentials.
 - **Loaded tab:** the middle click unloads it instead of closing it. If it is the selected tab, Zen switches to the next tab first.
 - **Unloaded tab:** the middle click closes it, as Firefox normally does. So two middle clicks close a loaded tab.
 - **A tab Firefox won't unload** (some `about:` pages such as about:robots): the middle click closes it, so a click is never a no-op.
 - **Split view:** every tab in the split unloads together.
 - **Open Glance preview:** the first middle click closes the preview, as Zen does for pinned tabs.
-- Pinned tabs, Essentials and multiselected tabs keep Zen's own behavior.
+- Plain middle-click on pinned tabs, Essentials and multiselected tabs keeps Zen's own behavior.
 
 The script listens for middle clicks on the tab strip in the capture phase, so it runs before Firefox's own middle-click close. It unloads with `gBrowser.explicitUnloadTabs`, the same call Zen uses for pinned tabs.
 
